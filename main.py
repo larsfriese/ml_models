@@ -10,10 +10,13 @@ import tensorflow_datasets as tfds
 from tensorflow import feature_column
 from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split
+#gui imports
+from tkinter import filedialog
+from tkinter import *
 
 # neural net #1
 # NUMERICAL FEATURES
-def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features):
+def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features, epochs_amount):
     dataframe = pd.read_csv(url_to_csv)
     dataframe.head()
     #replace nans and infinities in dataframe
@@ -72,7 +75,7 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
     # train the model
     model.fit(train_ds,
               validation_data=val_ds,
-              epochs=5)
+              epochs=epochs_amount)
     
     # model info after training
     loss, accuracy = model.evaluate(test_ds)
@@ -80,12 +83,36 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
 
     # make predictions for column based on feature columns
     predictions = model.predict(test_ds)
-    for prediction, fog in zip(predictions[:10], list(test_ds)[0][1][:10]):
-        print('Predicted ' + column_to_predict + ': {:.2%}'.format(prediction[0]),
-              " | Actual outcome: ",
-              ("1" if bool(fog) else "0"))
+    prediction_result = ''
+    for prediction, vars()[column_to_predict] in zip(predictions[:10], list(test_ds)[0][1][:10]): #vars()[column_to_predict] converts the string inputet to a variable
+        prediction_result += 'Predicted ' + column_to_predict + ': {:.2%}'.format(prediction[0]) + ' | Actual outcome: ' + ('1' if bool(vars()[column_to_predict]) else '0') + '\n'
+
+    return accuracy, prediction_result
 
 if __name__ == '__main__': 
-    neural_net_numerical_features('datasets/train_dataset.csv','fog',['other', 'worth', 'label'])
-    
-    
+    # GUI   
+    class main_gui:
+        def __init__(self, master):
+            self.master = master
+            master.title('Machine learning models')
+
+            self.label = Label(master, text='Numerical Neural Network')
+            self.label.pack()
+
+            self.choose_button = Button(master, text='Choose CSV file', command=self.choose_file)
+            self.choose_button.pack()
+
+            self.label_output = Label(master, text='')
+            self.label_output.pack()
+
+        def choose_file(self):
+            root.filename = filedialog.askopenfilename(initialdir = '/',title = 'Select file',filetypes = (('csv files','*.csv'),('all files','*.*')))
+            self.label_output['text'] = 'Reading data, starting training...\n'
+            accuracy, prediction_result = neural_net_numerical_features(root.filename,'fog',['other', 'worth', 'label'], 400)
+            self.label_output['text'] += 'Training done. \nModel Accuracy: {}'.format(accuracy)
+            self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
+
+    root = Tk()
+    gui = main_gui(root)
+    root.geometry('500x200')
+    root.mainloop()
