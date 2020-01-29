@@ -89,30 +89,55 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
 
     return accuracy, prediction_result
 
+# GUI
+class popupWindow(object):
+    def __init__(self,master):
+        top=self.top=Toplevel(master)
+        self.l=Label(top,text="Column to predict:")
+        self.l.pack()
+        self.e=Entry(top)
+        self.e.pack()
+        self.choose_button = Button(top, text='Choose CSV file', command=self.choose_file)
+        self.choose_button.pack()
+        self.b=Button(top,text='Ok',command=self.cleanup)
+        self.b.pack()
+        
+    def cleanup(self):
+        self.value=self.e.get()
+        self.top.destroy()
+    
+    def choose_file(self):
+        root.filename = filedialog.askopenfilename(initialdir = '/',title = 'Select file',filetypes = (('csv files','*.csv'),('all files','*.*')))
+        gui.label_output['text'] = 'File ready.\n'
+        gui.b2['state'] = 'normal'
+
+class mainWindow(object):
+    def __init__(self,master):
+        self.master=master
+        self.b=Button(master,text="Numeric Feature Model",command=self.popup)
+        self.b.pack()
+        self.b2=Button(master,text="Train",command=self.run_network, state=DISABLED)
+        self.b2.pack()
+        self.label_output = Label(master, text='')
+        self.label_output.pack()
+
+    def popup(self):
+        self.w=popupWindow(self.master)
+        self.b["state"] = "disabled" 
+        self.master.wait_window(self.w.top)
+        self.b["state"] = "normal"
+
+    def entryValue(self):
+        return self.w.value
+    
+    def run_network(self):
+        accuracy, prediction_result = neural_net_numerical_features(root.filename,str(self.entryValue()),['other', 'worth', 'label'], 400)
+        self.label_output['text'] += 'Training done. \nModel Accuracy: {}'.format(accuracy)
+        self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
+
+
 if __name__ == '__main__': 
-    # GUI   
-    class main_gui:
-        def __init__(self, master):
-            self.master = master
-            master.title('Machine learning models')
-
-            self.label = Label(master, text='Numerical Neural Network')
-            self.label.pack()
-
-            self.choose_button = Button(master, text='Choose CSV file', command=self.choose_file)
-            self.choose_button.pack()
-
-            self.label_output = Label(master, text='')
-            self.label_output.pack()
-
-        def choose_file(self):
-            root.filename = filedialog.askopenfilename(initialdir = '/',title = 'Select file',filetypes = (('csv files','*.csv'),('all files','*.*')))
-            self.label_output['text'] = 'Reading data, starting training...\n'
-            accuracy, prediction_result = neural_net_numerical_features(root.filename,'fog',['other', 'worth', 'label'], 400)
-            self.label_output['text'] += 'Training done. \nModel Accuracy: {}'.format(accuracy)
-            self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
-
     root = Tk()
-    gui = main_gui(root)
+    gui = mainWindow(root)
     root.geometry('500x200')
     root.mainloop()
