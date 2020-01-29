@@ -93,48 +93,71 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
 class popupWindow(object):
     def __init__(self,master):
         top=self.top=Toplevel(master)
-        self.l=Label(top,text="Column to predict:")
-        self.l.pack()
-        self.e=Entry(top)
-        self.e.pack()
         self.choose_button = Button(top, text='Choose CSV file', command=self.choose_file)
         self.choose_button.pack()
-        self.b=Button(top,text='Ok',command=self.cleanup)
+        self.l=Label(top,text="Column to predict:", state=DISABLED)
+        self.l.pack()
+        self.e=Entry(top, state=DISABLED)
+        self.e.pack()
+        self.l2=Label(top,text="Numerical columns used to predict in a list: (e.g. column1,column2,etc.)", state=DISABLED)
+        self.l2.pack()
+        self.e2=Entry(top, state=DISABLED)
+        self.e2.pack()
+        self.l3=Label(top,text="Number of epochs:", state=DISABLED)
+        self.l3.pack()
+        self.e3=Entry(top, state=DISABLED)
+        self.e3.pack()
+        self.b=Button(top,text='Ok',command=self.cleanup, state=DISABLED)
         self.b.pack()
         
     def cleanup(self):
         self.value=self.e.get()
+        self.value2=self.e2.get()
+        self.value3=self.e3.get()
+        gui.b2['state'] = 'normal'
         self.top.destroy()
     
     def choose_file(self):
         root.filename = filedialog.askopenfilename(initialdir = '/',title = 'Select file',filetypes = (('csv files','*.csv'),('all files','*.*')))
-        gui.label_output['text'] = 'File ready.\n'
-        gui.b2['state'] = 'normal'
+        if len(str(root.filename)) > 2:
+            gui.label_output['text'] = 'File ready.\n'
+            self.e['state'] = 'normal'
+            self.e2['state'] = 'normal'
+            self.e3['state'] = 'normal'
+            self.l['state'] = 'normal'
+            self.l2['state'] = 'normal'
+            self.l3['state'] = 'normal' 
+            self.b['state'] = 'normal' 
 
 class mainWindow(object):
     def __init__(self,master):
         self.master=master
-        self.b=Button(master,text="Numeric Feature Model",command=self.popup)
+        self.b=Button(master,text="Numeric Feature Model",command=self.popup, anchor=CENTER)
         self.b.pack()
-        self.b2=Button(master,text="Train",command=self.run_network, state=DISABLED)
+        self.b2=Button(master,text="Train",command=self.run_network, state=DISABLED, anchor=CENTER)
         self.b2.pack()
         self.label_output = Label(master, text='')
         self.label_output.pack()
 
     def popup(self):
         self.w=popupWindow(self.master)
-        self.b["state"] = "disabled" 
+        self.b['state'] = 'disabled' 
         self.master.wait_window(self.w.top)
-        self.b["state"] = "normal"
+        self.b['state'] = 'normal'
 
     def entryValue(self):
         return self.w.value
+
+    def entryValue2(self):
+        return self.w.value2
+
+    def entryValue3(self):
+        return self.w.value3
     
     def run_network(self):
-        accuracy, prediction_result = neural_net_numerical_features(root.filename,str(self.entryValue()),['other', 'worth', 'label'], 400)
+        accuracy, prediction_result = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')], int(self.entryValue3()))
         self.label_output['text'] += 'Training done. \nModel Accuracy: {}'.format(accuracy)
         self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
-
 
 if __name__ == '__main__': 
     root = Tk()
