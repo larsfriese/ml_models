@@ -32,10 +32,10 @@ class popupWindow(object):
         
         self.l4=Label(top,text='Optimizer:', state=DISABLED)
         self.l4.pack()
-        options = ['SGD','RMSprop','Adagrad','Adadelta','Adam','Adamax','Nadam']
-        variable = StringVar(top)
-        variable.set(options[4]) # default value
-        self.w = OptionMenu(top, variable, *options)
+        options = ['sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam']
+        self.optimizer = StringVar(top)
+        self.optimizer.set(options[4]) # default value
+        self.w = OptionMenu(top, self.optimizer, *options)
         self.w.configure(state="disabled")
         self.w.pack()
 
@@ -49,7 +49,8 @@ class popupWindow(object):
         self.label_output.pack()
 
     def run_network(self):
-        accuracy, prediction_result, model_name = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')], int(self.entryValue3()), optimizer_input)
+        print(self.optimizer.get())
+        accuracy, prediction_result, model_name = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')], int(self.entryValue3()), self.optimizer.get())
         self.label_output['text'] += 'Training done. \nModel Accuracy: {}'.format(accuracy)
         self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
         self.label_output['text'] += '\nModel saved in folder:\n {}'.format(model_name)
