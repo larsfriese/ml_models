@@ -39,6 +39,15 @@ class popupWindow(object):
         self.w.configure(state="disabled")
         self.w.pack()
 
+        self.l5=Label(top,text='Loss:', state=DISABLED)
+        self.l5.pack()
+        options_loss = ['mean_squared_error','mean_squared_logarithmic_error','mean_absolute_error','binary_crossentropy','hinge','squared_hinge','categorical_crossentropy','sparse_categorical_crossentropy','kullback_leibler_divergence']
+        self.loss = StringVar(top)
+        self.loss.set(options_loss[3]) # default value
+        self.w2 = OptionMenu(top, self.loss, *options_loss)
+        self.w2.configure(state="disabled")
+        self.w2.pack()
+
         self.b=Button(top,text='Save',command=self.cleanup, state=DISABLED)
         self.b.pack(padx=5, side=RIGHT, anchor=S)
         self.b2=Button(top,text='Train',command=self.run_network, state=DISABLED)
@@ -50,7 +59,7 @@ class popupWindow(object):
 
     def run_network(self):
         print(self.optimizer.get())
-        accuracy, prediction_result, model_name = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')], int(self.entryValue3()), self.optimizer.get())
+        accuracy, prediction_result, model_name = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get())
         self.label_output['text'] += 'Training done. \nModel Accuracy: {}'.format(accuracy)
         self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
         self.label_output['text'] += '\nModel saved in folder:\n {}'.format(model_name)
@@ -84,8 +93,10 @@ class popupWindow(object):
             self.l2['state'] = 'normal'
             self.l3['state'] = 'normal'
             self.w['state'] = 'normal'
-            self.l4['state'] = 'normal' 
-            self.b['state'] = 'normal' 
+            self.l5['state'] = 'normal'
+            self.w2['state'] = 'normal'
+            self.l4['state'] = 'normal'
+            self.b['state'] = 'normal'
 
 class popupWindow_predict(object):
     def __init__(self,master):
@@ -146,14 +157,18 @@ class mainWindow(object):
     def popup(self):
         self.w=popupWindow(self.master)
         self.b['state'] = 'disabled' 
+        self.b_p['state'] = 'disabled'
         self.master.wait_window(self.w.top)
         self.b['state'] = 'normal'
+        self.b_p['state'] = 'normal'
 
     def popup_predict(self):
         self.w=popupWindow_predict(self.master)
         self.b['state'] = 'disabled' 
+        self.b_p['state'] = 'disabled'
         self.master.wait_window(self.w.top)
         self.b['state'] = 'normal'
+        self.b_p['state'] = 'normal'
 
 if __name__ == '__main__': 
     root = Tk(className='ml_models')

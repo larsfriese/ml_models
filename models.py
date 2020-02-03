@@ -17,7 +17,7 @@ from sklearn.model_selection import train_test_split
 
 # neural net #1
 # NUMERICAL FEATURES TRAINING
-def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features, epochs_amount, optimizer_input):
+def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features, epochs_amount, optimizer_input, loss_input):
     dataframe = pd.read_csv(url_to_csv)
     dataframe.head()
     #replace nans and infinities in dataframe
@@ -70,7 +70,7 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
     
     # optimize the model
     model.compile(optimizer=optimizer_input,
-                  loss='binary_crossentropy',
+                  loss=loss_input,
                   metrics=['accuracy'])
     
     # train the model
