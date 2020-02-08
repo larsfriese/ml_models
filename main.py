@@ -8,7 +8,7 @@ from datetime import date
 from tkinter import filedialog
 from tkinter import *
 #NEURAL NET functions from models.py
-from models import*
+from models import *
 
 # GUI
 
@@ -112,7 +112,7 @@ class popupWindow_predict(object):
         self.b_predict=Button(top,text='Predict',command=self.run_predict, state=DISABLED)
         self.b_predict.grid(row=4, column=2)
         self.label_output_predict=Label(top,text='', state=DISABLED)
-        self.label_output_predict.grid(row=5, column=2)
+        self.label_output_predict.grid(row=5, columnspan=2)
         
     def choose_predict_file(self):
         global predict_filename
@@ -207,6 +207,7 @@ class mainWindow(object):
         self.b_p['state'] = 'normal'
 
 if __name__ == '__main__': 
+    #neural_net_word_features('/home/lars/Schreibtisch/gitprojects/ml_models/datasets/text.csv',100,'adam')
     root = Tk(className='ml_models')
     root.resizable(False, False)
     gui = mainWindow(root)

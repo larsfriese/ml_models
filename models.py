@@ -15,6 +15,9 @@ from sklearn.model_selection import train_test_split
 
 # COLLECTION OF NEURAL NETWORK FUNCTIONS
 
+# Linear regression models are neural networks without activation fucntions,
+# therefore linear functions which cant adapt as good
+
 # neural net #1
 # NUMERICAL FEATURES TRAINING
 def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features, epochs_amount, optimizer_input, loss_input):
@@ -34,8 +37,6 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
         dataframe = dataframe.copy()
         # get label column
         labels = dataframe.pop(column_to_predict)
-        print(labels)
-        print(dict(dataframe))
         # to construct a Dataset from data in memory, you can use tf.data.Dataset.from_tensors() or tf.data.Dataset.from_tensor_slices()
         # tf.data.Dataset.from_tensor_slices((data, label))
         ds = tf.data.Dataset.from_tensor_slices((dict(dataframe), labels))
@@ -105,7 +106,6 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
 
 # NUMERICAL FEATURES PREDICTION
 def predict_numerical_features(url_to_csv, column_to_predict, model_filename):
-    print(url_to_csv, column_to_predict, model_filename)
     model = keras.models.load_model(model_filename)
     
     
@@ -122,7 +122,7 @@ def predict_numerical_features(url_to_csv, column_to_predict, model_filename):
     
     batch_size = 32
     full_ds = df_to_dataset(dataframe, batch_size=batch_size)
-
+    
     predictions = model.predict(full_ds)
     prediction_result = ''
     for prediction, vars()[column_to_predict] in zip(predictions, list(full_ds)[0][1]): #vars()[column_to_predict] converts the string inputet to a variable
@@ -130,3 +130,64 @@ def predict_numerical_features(url_to_csv, column_to_predict, model_filename):
         prediction_result += 'Predicted ' + column_to_predict + ': {:.2}'.format(prediction[0]) + ' : Predicted Outcome: ' + str(outcome) + '\n'
 
     return prediction_result
+
+# neural net #2
+# WORD FEATURES TRAINING
+def neural_net_word_features(url_to_csv, epochs_amount, optimizer_input):
+    dataframe = pd.read_csv(url_to_csv)
+    dataframe.head()
+    # replace nans and infinities in dataframe
+    dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
+    
+    ds = dataframe.copy()
+    labels = ds.label.tolist()
+    texts = ds.text.tolist()
+
+    # GET THE LISTS TO BE DATASETS
+
+    # word embedding
+    embedding = "https://tfhub.dev/google/tf2-preview/gnews-swivel-20dim/1"
+    hub_layer = hub.KerasLayer(embedding, input_shape=[], 
+                           dtype=tf.string, trainable=True)
+    
+    model = tf.keras.Sequential()
+    model.add(hub_layer)
+    model.add(tf.keras.layers.Dense(16, activation='relu'))
+    model.add(tf.keras.layers.Dense(1))
+    
+    model.compile(optimizer=optimizer_input,
+              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+    
+    history = model.fit(train_dataset.shuffle(10000).batch(512),
+                    epochs=epochs_amount,
+                    validation_data=validation_dataset.batch(512),
+                    verbose=1)
+    
+    loss, accuracy = model.evaluate(train_dataset)
+
+    model.save('NNCSVT_'+str(date.today()), '/')
+    model_name = str(date.today())
+
+    return accuracy, model_name
+
+def get_model_weights(model_filename):
+    model = keras.models.load_model(model_filename)
+    
+    weights = []
+    # last layer does not have weigts/biases, so [:-1]
+    for count,l in enumerate(model.layers[:-1], 1):
+        vars()[str(count)] = model.layers[count].get_weights()[0]
+        weights.append(vars()[str(count)])
+
+    return weights
+
+def get_model_biases(model_filename):
+    model = keras.models.load_model(model_filename)
+
+    biases = []
+    for count,l in enumerate(model.layers[:-1], 1):
+        vars()[str(count)] = model.layers[count].get_weights()[1]
+        biases.append(vars()[str(count)])
+
+    return biases
