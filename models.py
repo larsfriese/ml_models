@@ -15,11 +15,11 @@ from sklearn.model_selection import train_test_split
 
 # COLLECTION OF NEURAL NETWORK FUNCTIONS
 
-# Linear regression models are neural networks without activation fucntions,
+# Linear regression models are neural networks without activation functions,
 # therefore linear functions which cant adapt as good
 
 # neural net #1
-# NUMERICAL FEATURES TRAINING
+# NUMERICAL/TEXT FEATURES TRAINING
 def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input):
     print(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input)
     dataframe = pd.read_csv(url_to_csv)
@@ -120,7 +120,7 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
 
     return accuracy, prediction_result, model_name
 
-# NUMERICAL FEATURES PREDICTION
+# NUMERICAL/TEXT FEATURES PREDICTION
 def predict_numerical_features(url_to_csv, column_to_predict, model_filename):
     model = keras.models.load_model(model_filename)
     dataframe = pd.read_csv(url_to_csv)
