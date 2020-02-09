@@ -20,7 +20,8 @@ from sklearn.model_selection import train_test_split
 
 # neural net #1
 # NUMERICAL FEATURES TRAINING
-def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features, epochs_amount, optimizer_input, loss_input):
+def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input):
+    print(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input)
     dataframe = pd.read_csv(url_to_csv)
     dataframe.head()
     # replace nans and infinities in dataframe
@@ -58,11 +59,26 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
     # A utility method to create a feature column
     # and to transform a batch of data
     feature_columns = []
-
-    # choose numeric features
-    for header in list_of_features:
-        feature_columns.append(feature_column.numeric_column(header))
     
+    all_words = []
+    if list_of_features_word[0] is not '': 
+        # find all words
+        for word_column in list_of_features_word:
+            for i in dataframe[word_column].tolist():
+                splitted = i.split()
+                for x in splitted:
+                    if x not in all_words: all_words.append(x)
+
+            text = feature_column.categorical_column_with_vocabulary_list(
+                word_column, all_words)
+            text_embedding = feature_column.embedding_column(text, dimension=8)
+            feature_columns.append(text_embedding)
+    
+    if list_of_features_numeric[0] is not '':
+        # choose numeric features
+        for header in list_of_features_numeric:
+            feature_columns.append(feature_column.numeric_column(header))
+        
     # layer with features
     feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
     
@@ -107,8 +123,6 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
 # NUMERICAL FEATURES PREDICTION
 def predict_numerical_features(url_to_csv, column_to_predict, model_filename):
     model = keras.models.load_model(model_filename)
-    
-    
     dataframe = pd.read_csv(url_to_csv)
     #replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
@@ -131,49 +145,9 @@ def predict_numerical_features(url_to_csv, column_to_predict, model_filename):
 
     return prediction_result
 
-# neural net #2
-# WORD FEATURES TRAINING
-def neural_net_word_features(url_to_csv, epochs_amount, optimizer_input):
-    dataframe = pd.read_csv(url_to_csv)
-    dataframe.head()
-    # replace nans and infinities in dataframe
-    dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
-    
-    ds = dataframe.copy()
-    labels = ds.label.tolist()
-    texts = ds.text.tolist()
-
-    # GET THE LISTS TO BE DATASETS
-
-    # word embedding
-    embedding = "https://tfhub.dev/google/tf2-preview/gnews-swivel-20dim/1"
-    hub_layer = hub.KerasLayer(embedding, input_shape=[], 
-                           dtype=tf.string, trainable=True)
-    
-    model = tf.keras.Sequential()
-    model.add(hub_layer)
-    model.add(tf.keras.layers.Dense(16, activation='relu'))
-    model.add(tf.keras.layers.Dense(1))
-    
-    model.compile(optimizer=optimizer_input,
-              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-              metrics=['accuracy'])
-    
-    history = model.fit(train_dataset.shuffle(10000).batch(512),
-                    epochs=epochs_amount,
-                    validation_data=validation_dataset.batch(512),
-                    verbose=1)
-    
-    loss, accuracy = model.evaluate(train_dataset)
-
-    model.save('NNCSVT_'+str(date.today()), '/')
-    model_name = str(date.today())
-
-    return accuracy, model_name
-
+# get weights and biases of hidden layers of any model
 def get_model_weights(model_filename):
     model = keras.models.load_model(model_filename)
-    
     weights = []
     # last layer does not have weigts/biases, so [:-1]
     for count,l in enumerate(model.layers[:-1], 1):
@@ -184,7 +158,6 @@ def get_model_weights(model_filename):
 
 def get_model_biases(model_filename):
     model = keras.models.load_model(model_filename)
-
     biases = []
     for count,l in enumerate(model.layers[:-1], 1):
         vars()[str(count)] = model.layers[count].get_weights()[1]

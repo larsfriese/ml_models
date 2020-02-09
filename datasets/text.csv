@@ -1,10 +1,10 @@
 label,text
-1,test yes
+1,yes
 0,not test thing
 0,test yes
-1,test yes
-1,test yes
-1,no test yes
+1,yes
+1,yes
+1,yes
 0,test yes
 0,test yes
 1,test yes

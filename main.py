@@ -25,41 +25,46 @@ class popupWindow(object):
         self.l2.grid(row=2)
         self.e2=Entry(top, state=DISABLED)
         self.e2.grid(row=2, column=2)
+        self.l6=Label(top,text='Text columns used to predict\n in a list: (e.g. column1,column2,etc.)', state=DISABLED)
+        self.l6.grid(row=3)
+        self.e4=Entry(top, state=DISABLED)
+        self.e4.grid(row=3, column=2)
         self.l3=Label(top,text='Number of epochs:', state=DISABLED)
-        self.l3.grid(row=3)
+        self.l3.grid(row=4)
         self.e3=Entry(top, state=DISABLED)
-        self.e3.grid(row=3, column=2)
+        self.e3.grid(row=4, column=2)
         
         self.l4=Label(top,text='Optimizer:', state=DISABLED)
-        self.l4.grid(row=4)
+        self.l4.grid(row=5)
         options = ['sgd','rmsprop','adagrad','adadelta','adam','adamax','nadam']
         self.optimizer = StringVar(top)
         self.optimizer.set(options[4]) # default value
         self.w = OptionMenu(top, self.optimizer, *options)
         self.w.configure(state="disabled")
-        self.w.grid(row=4, column=2)
+        self.w.grid(row=5, column=2)
 
         self.l5=Label(top,text='Loss:', state=DISABLED)
-        self.l5.grid(row=5)
+        self.l5.grid(row=6)
         options_loss = ['mean_squared_error','mean_squared_logarithmic_error','mean_absolute_error','binary_crossentropy','hinge','squared_hinge','categorical_crossentropy','sparse_categorical_crossentropy','kullback_leibler_divergence']
         self.loss = StringVar(top)
         self.loss.set(options_loss[3]) # default value
         self.w2 = OptionMenu(top, self.loss, *options_loss)
         self.w2.configure(state="disabled")
-        self.w2.grid(row=5, column=2)
+        self.w2.grid(row=6, column=2)
 
         self.b2=Button(top,text='Train',command=self.run_network, state=DISABLED)
-        self.b2.grid(row=7, column=3)
+        self.b2.grid(row=8, column=3)
         self.b3=Button(top,text='Clear Output',command=self.clear_output)
-        self.b3.grid(row=8, column=3)
+        self.b3.grid(row=9, column=3)
         self.label_output = Label(top, text='')
-        self.label_output.grid(row=7)
+        self.label_output.grid(row=8, pady=5, padx=5, column=0, columnspan=3, rowspan=2)
 
     def run_network(self):
         self.value=self.e.get()
         self.value2=self.e2.get()
         self.value3=self.e3.get()
-        accuracy, prediction_result, model_name = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get())
+        self.value4=self.e4.get()
+        accuracy, prediction_result, model_name = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get())
         self.label_output['text'] += 'Training done. \nModel Accuracy: {}'.format(accuracy)
         self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
         self.label_output['text'] += '\nModel saved in folder:\n {}'.format(model_name)
@@ -72,6 +77,9 @@ class popupWindow(object):
 
     def entryValue3(self):
         return self.value3
+    
+    def entryValue4(self):
+        return self.value4
     
     def clear_output(self):
         self.label_output['text'] = ''
@@ -91,6 +99,8 @@ class popupWindow(object):
             self.w2['state'] = 'normal'
             self.l4['state'] = 'normal'
             self.b2['state'] = 'normal'
+            self.e4['state'] = 'normal'
+            self.l6['state'] = 'normal'
 
 class popupWindow_predict(object):
     def __init__(self,master,model_fn):
@@ -100,20 +110,24 @@ class popupWindow_predict(object):
         self.choose_button_predict = Button(top, text='Choose CSV file to predict', command=self.choose_predict_file)
         self.choose_button_predict.grid(row=1)
         self.choose_model_button_predict = Button(top, text='Choose model folder for prediction', command=self.choose_model_file)
-        self.choose_model_button_predict.grid(row=1, column=2)
-        self.l_predict_filename=Label(top,text='', wraplengt=200, state=DISABLED)
-        self.l_predict_filename.grid(row=2)
-        self.l_model_filename=Label(top,text=model_filename, wraplengt=200, state=DISABLED)
-        self.l_model_filename.grid(row=2, column=2)
+        self.choose_model_button_predict.grid(row=2)
+        self.l_predict_filename=Label(top,text='', wraplengt=200)
+        self.l_predict_filename.grid(row=1, column=1)
+        self.l_model_filename=Label(top,text=model_filename, wraplengt=200)
+        self.l_model_filename.grid(row=2, column=1)
+        self.b_weights=Button(top,text='Get weights of hidden layers in command line',command=self.get_weights, state=DISABLED)
+        self.b_weights.grid(row=3, column=1)
         self.l_predict=Label(top,text='Column to predict:', state=DISABLED)
-        self.l_predict.grid(row=3)
+        self.l_predict.grid(row=4)
         self.e_predict=Entry(top, state=DISABLED)
-        self.e_predict.grid(row=3, column=2)
+        self.e_predict.grid(row=4, column=1)
         self.b_predict=Button(top,text='Predict',command=self.run_predict, state=DISABLED)
-        self.b_predict.grid(row=4, column=2)
+        self.b_predict.grid(row=5, column=1)
         self.label_output_predict=Label(top,text='', state=DISABLED)
-        self.label_output_predict.grid(row=5, columnspan=2)
+        self.label_output_predict.grid(row=6, columnspan=2)
         
+        if model_fn is not '': self.b_weights['state'] = 'normal'
+
     def choose_predict_file(self):
         global predict_filename
         predict_filename = filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('csv files','*.csv'),('all files','*.*')))
@@ -127,11 +141,16 @@ class popupWindow_predict(object):
     
     def entryValue_predict(self):
         return self.e_predict.get()
+    
+    def get_weights(self):
+        global model_filename
+        print(get_model_weights(model_filename))
 
     def choose_model_file(self):
         global model_filename
         model_filename = filedialog.askdirectory(initialdir = os.getcwd())
         self.l_model_filename['text']=model_filename
+        self.b_weights['state'] = 'normal'
         
     def run_predict(self):
         global model_filename
@@ -141,20 +160,20 @@ class popupWindow_predict(object):
 class mainWindow(object):
     def __init__(self,master):
         self.master=master
-        self.b=Button(master,text='CSV Model Train (Numeric 2)',command=self.popup, anchor=CENTER)
+        self.b=Button(master,text='CSV Model Train',command=self.popup, anchor=CENTER)
         self.b.grid(row=2)
         self.label2=Label(master,text='Make Models:')
         self.label2.grid(row=1)
-        self.b_p=Button(master,text='CSV Model Predict (Numeric 2)',command=self.popup_predict, anchor=CENTER)
+        self.b_p=Button(master,text='CSV Model Predict',command=self.popup_predict, anchor=CENTER)
         self.b_p.grid(row=2, column=1)
         self.label3=Label(master,text='Predict with saved models:')
         self.label3.grid(row=1, column=1)
         self.label3=Label(master,text='Saved models in cwd:')
-        self.label3.grid(row=2, column=3)
-        self.lb1 = Listbox(master)
-        self.lb1.grid(row=3, column=3, sticky='se')
+        self.label3.grid(row=1, column=3)
+        self.lb1 = Listbox(master, width=25)
+        self.lb1.grid(row=5, column=3, sticky='se')
         self.lb1.bind('<Double-Button>', self.onselect)
-        self.b3=Button(master,text='Refresh',command=self.refresh, anchor=CENTER).grid(row=1, column=3, sticky='e')
+        self.b3=Button(master,text='Refresh',command=self.refresh, anchor=CENTER).grid(row=2, column=3, sticky='e')
         
         # adding found files to list
         global dirs_found
@@ -163,7 +182,7 @@ class mainWindow(object):
             if 'NN' in dirs:
                 dirs_found.append(dirs)
                 if 'CSV' in dirs:
-                    self.lb1.insert(count, 'CSV model: '+ dirs.split('_', maxsplit=1)[-1])  
+                    self.lb1.insert(count, 'CSV Model: '+ dirs.split('_', maxsplit=1)[-1])  
     
     # refreshing the list
     def refresh(self):
@@ -174,7 +193,7 @@ class mainWindow(object):
             if 'NN' in dirs:
                 dirs_found.append(dirs)
                 if 'CSV' in dirs:
-                    self.lb1.insert(count, 'CSV model: '+ dirs.split('_', maxsplit=1)[-1])  
+                    self.lb1.insert(count, 'CSV Model: '+ dirs.split('_', maxsplit=1)[-1])  
 
     def popup(self):
         self.w=popupWindow(self.master)
@@ -186,6 +205,14 @@ class mainWindow(object):
 
     def popup_predict(self):
         self.w=popupWindow_predict(self.master,'')
+        self.b['state'] = 'disabled' 
+        self.b_p['state'] = 'disabled'
+        self.master.wait_window(self.w.top)
+        self.b['state'] = 'normal'
+        self.b_p['state'] = 'normal'
+    
+    def popup_text(self):
+        self.w=popupWindow_csv_text(self.master)
         self.b['state'] = 'disabled' 
         self.b_p['state'] = 'disabled'
         self.master.wait_window(self.w.top)
@@ -207,7 +234,6 @@ class mainWindow(object):
         self.b_p['state'] = 'normal'
 
 if __name__ == '__main__': 
-    #neural_net_word_features('/home/lars/Schreibtisch/gitprojects/ml_models/datasets/text.csv',100,'adam')
     root = Tk(className='ml_models')
     root.resizable(False, False)
     gui = mainWindow(root)
