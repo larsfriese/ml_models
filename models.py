@@ -4,6 +4,7 @@ import numpy as np
 import csv, sys, os
 import pandas as pd
 from datetime import date
+import matplotlib.pyplot as plt
 # tensorflow
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -88,26 +89,43 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
     test_ds = df_to_dataset(test, shuffle=False, batch_size=batch_size)
 
     # model
-    model = tf.keras.Sequential([
-        feature_layer,
-        layers.Dense(128, activation='relu'),
-        layers.Dense(128, activation='relu'),
-        layers.Dense(1, activation='sigmoid')
-    ])
-    
+    model = tf.keras.Sequential()
+
+    if len(dataframe.index)<100:
+        model.add(feature_layer)
+        model.add(layers.Dense(64, activation='relu'))
+        model.add(layers.Dense(64, activation='relu'))
+        model.add(layers.Dense(1, activation='sigmoid'))
+    elif 100<len(dataframe.index)<1000:
+        model.add(feature_layer)
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(1, activation='sigmoid'))
+    elif 1000<len(dataframe.index):
+        model.add(feature_layer)
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(1, activation='sigmoid'))
+
     # optimize the model
     model.compile(optimizer=optimizer_input,
                   loss=loss_input,
                   metrics=['accuracy'])
-    
+
     # train the model
-    model.fit(train_ds,
-              validation_data=val_ds,
-              epochs=epochs_amount)
+    history = model.fit(train_ds,
+                        validation_data=val_ds,
+                        epochs=epochs_amount)
     
-    # model info after training
-    loss, accuracy = model.evaluate(test_ds)
-    print("Accuracy", accuracy)
+    acc = history.history['accuracy'][-1]
+    val_acc = history.history['val_accuracy'][-1]
+
+    # overfitting
+    if (acc-val_acc) > 0.3:
+        accuracy = 'Warning: The Model might be overfitting, as the training accuracy is\n {:.2f} and the validation accuracy is {:.2f}.\n Possible solutions:\n - use more training data\n - remove irrelevant features, add more relevant features.'.format(acc, val_acc)
+    else:
+        accuracy = 'Training acc.: {:.2f} Test acc.: {:.2f}'.format(acc, val_acc)
 
     # make predictions for column based on feature columns
     predictions = model.predict(test_ds)

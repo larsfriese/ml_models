@@ -65,9 +65,10 @@ class popupWindow(object):
         self.value3=self.e3.get()
         self.value4=self.e4.get()
         accuracy, prediction_result, model_name = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get())
-        self.label_output['text'] += 'Training done. \nModel Accuracy: {}'.format(accuracy)
+        self.label_output['text'] = ''
+        self.label_output['text'] += 'Training done. \n{}'.format(accuracy)
         self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
-        self.label_output['text'] += '\nModel saved in folder:\n {}'.format(model_name)
+        self.label_output['text'] += '\nModel saved in folder:\n {}\n\n'.format(model_name)
         
     def entryValue(self):
         return self.value
