@@ -12,6 +12,7 @@ import tensorflow_datasets as tfds
 from tensorflow import feature_column
 import tensorflow.keras as keras
 from tensorflow.keras import *
+from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 
 # COLLECTION OF NEURAL NETWORK FUNCTIONS
@@ -21,8 +22,8 @@ from sklearn.model_selection import train_test_split
 
 # neural net #1
 # NUMERICAL/TEXT FEATURES TRAINING
-def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input):
-    print(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input)
+def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input, dropout, save_model):
+            
     dataframe = pd.read_csv(url_to_csv)
     dataframe.head()
     # replace nans and infinities in dataframe
@@ -108,6 +109,8 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
         model.add(layers.Dense(128, activation='relu'))
         model.add(layers.Dense(1, activation='sigmoid'))
 
+
+    cb_list=[EarlyStopping(monitor='accuracy', min_delta=0.005, patience=10, baseline=None, mode='auto')] if dropout==True else []
     # optimize the model
     model.compile(optimizer=optimizer_input,
                   loss=loss_input,
@@ -116,7 +119,8 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
     # train the model
     history = model.fit(train_ds,
                         validation_data=val_ds,
-                        epochs=epochs_amount)
+                        epochs=epochs_amount,
+                        callbacks=cb_list)
     
     acc = history.history['accuracy'][-1]
     val_acc = history.history['val_accuracy'][-1]
@@ -133,13 +137,16 @@ def neural_net_numerical_features(url_to_csv, column_to_predict, list_of_feature
     for prediction, vars()[column_to_predict] in zip(predictions[:10], list(test_ds)[0][1][:10]): #vars()[column_to_predict] converts the string inputet to a variable
         prediction_result += 'Predicted ' + column_to_predict + ': {:.2%}'.format(prediction[0]) + ' | Actual outcome: ' + ('1' if bool(vars()[column_to_predict]) else '0') + '\n'
     
-    model.save('NNCSV_'+str(date.today()), '/') # save model for prediction use later
-    model_name = str(date.today())
+    if save_model==True:
+        model.save('NNCSV_'+str(date.today()), '/') # save model for prediction use later
+        model_info = '\nModel saved in folder:\n {}\n\n'.format(str(date.today()))
+    else:
+        model_info = ''
 
-    return accuracy, prediction_result, model_name
+    return accuracy, prediction_result, model_info
 
 # NUMERICAL/TEXT FEATURES PREDICTION
-def predict_numerical_features(url_to_csv, column_to_predict, model_filename):
+def predict_csv_features(url_to_csv, column_to_predict, model_filename):
     model = keras.models.load_model(model_filename)
     dataframe = pd.read_csv(url_to_csv)
     #replace nans and infinities in dataframe

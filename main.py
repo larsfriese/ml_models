@@ -16,7 +16,9 @@ class popupWindow(object):
     def __init__(self,master):
         top=self.top=Toplevel(master)
         self.choose_button = Button(top, text='Choose CSV file', command=self.choose_file)
-        self.choose_button.grid(row=1, column=3)
+        self.choose_button.grid(row=0, column=3)
+        self.l_options=Label(top,text='', wraplengt=400)
+        self.l_options.grid(row=0, columnspan=3)
         self.l=Label(top,text='Column to predict:', state=DISABLED)
         self.l.grid(row=1)
         self.e=Entry(top, state=DISABLED)
@@ -33,6 +35,9 @@ class popupWindow(object):
         self.l3.grid(row=4)
         self.e3=Entry(top, state=DISABLED)
         self.e3.grid(row=4, column=2)
+        self.dp_var = IntVar()
+        self.ch=Checkbutton(top, text='Dropout', state=DISABLED, variable=self.dp_var)
+        self.ch.grid(row=4, column=3)
         
         self.l4=Label(top,text='Optimizer:', state=DISABLED)
         self.l4.grid(row=5)
@@ -55,7 +60,10 @@ class popupWindow(object):
         self.b2=Button(top,text='Train',command=self.run_network, state=DISABLED)
         self.b2.grid(row=8, column=3)
         self.b3=Button(top,text='Clear Output',command=self.clear_output)
-        self.b3.grid(row=9, column=3)
+        self.b3.grid(row=10, column=3)
+        self.save_var = IntVar()
+        self.ch2=Checkbutton(top, text='Save Model', state=DISABLED, variable=self.save_var)
+        self.ch2.grid(row=9, column=3)
         self.label_output = Label(top, text='')
         self.label_output.grid(row=8, pady=5, padx=5, column=0, columnspan=3, rowspan=2)
 
@@ -64,11 +72,11 @@ class popupWindow(object):
         self.value2=self.e2.get()
         self.value3=self.e3.get()
         self.value4=self.e4.get()
-        accuracy, prediction_result, model_name = neural_net_numerical_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get())
+        accuracy, prediction_result, model_info = neural_net_csv_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get(), self.dp_var.get(), self.save_var.get())
         self.label_output['text'] = ''
         self.label_output['text'] += 'Training done. \n{}'.format(accuracy)
         self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
-        self.label_output['text'] += '\nModel saved in folder:\n {}\n\n'.format(model_name)
+        self.label_output['text'] += model_info
         
     def entryValue(self):
         return self.value
@@ -84,9 +92,27 @@ class popupWindow(object):
     
     def clear_output(self):
         self.label_output['text'] = ''
+    
+    '''def add_all_columns(self):
+        dataframe = pd.read_csv(root.filename)
+        for i in list(dataframe.columns):
+            first_column = dataframe[i].iloc[1]
+            print(first_column)
+            if type(first_column)==str:
+                self.e4.insert(END, str(i)+',')
+            else:
+                self.e2.insert(END, str(i)+',')'''
 
     def choose_file(self):
         root.filename = filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('csv files','*.csv'),('all files','*.*')))
+        dataframe = pd.read_csv(root.filename)
+        options_str = ''
+        for i in list(dataframe.columns):
+            if i==list(dataframe.columns)[-1]:
+                options_str += i
+            else:
+                options_str += i + ', '
+        self.l_options['text'] = 'Columns: ' + options_str
         if len(str(root.filename)) > 2:
             self.label_output['text'] = 'File ready.\n'
             self.e['state'] = 'normal'
@@ -102,6 +128,8 @@ class popupWindow(object):
             self.b2['state'] = 'normal'
             self.e4['state'] = 'normal'
             self.l6['state'] = 'normal'
+            self.ch['state'] = 'normal'
+            self.ch2['state'] = 'normal'
 
 class popupWindow_predict(object):
     def __init__(self,master,model_fn):
@@ -155,7 +183,7 @@ class popupWindow_predict(object):
         
     def run_predict(self):
         global model_filename
-        results = predict_numerical_features(predict_filename, self.entryValue_predict(), model_filename)
+        results = predict_csv_features(predict_filename, self.entryValue_predict(), model_filename)
         self.label_output_predict['text'] = 'Predictions:\n{}'.format(results)
 
 class mainWindow(object):
