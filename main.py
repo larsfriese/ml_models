@@ -17,6 +17,8 @@ class popupWindow(object):
         top=self.top=Toplevel(master)
         self.choose_button = Button(top, text='Choose CSV file', command=self.choose_file)
         self.choose_button.grid(row=0, column=3)
+        self.fillall = Button(top, text='Add all columns', command=self.add_all_columns, state=DISABLED)
+        self.fillall.grid(row=1, column=3)
         self.l_options=Label(top,text='', wraplengt=400)
         self.l_options.grid(row=0, columnspan=3)
         self.l=Label(top,text='Column to predict:', state=DISABLED)
@@ -93,25 +95,37 @@ class popupWindow(object):
     def clear_output(self):
         self.label_output['text'] = ''
     
-    '''def add_all_columns(self):
+    def add_all_columns(self):
         dataframe = pd.read_csv(root.filename)
         for i in list(dataframe.columns):
             first_column = dataframe[i].iloc[1]
-            print(first_column)
+            if self.e.get() == list(dataframe.columns)[list(dataframe.columns).index(i)]:
+                continue
             if type(first_column)==str:
                 self.e4.insert(END, str(i)+',')
             else:
-                self.e2.insert(END, str(i)+',')'''
+                self.e2.insert(END, str(i)+',')
+        self.e2.delete(len(self.e2.get())-1, END)
+        self.e4.delete(len(self.e4.get())-1, END)
 
     def choose_file(self):
         root.filename = filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('csv files','*.csv'),('all files','*.*')))
         dataframe = pd.read_csv(root.filename)
         options_str = ''
-        for i in list(dataframe.columns):
-            if i==list(dataframe.columns)[-1]:
-                options_str += i
-            else:
-                options_str += i + ', '
+        if len(list(dataframe.columns))>30:
+            for i in list(dataframe.columns[:30]):
+                if i==list(dataframe.columns)[30]:
+                    options_str += i
+                else:
+                    options_str += i + ', '
+            options_str += ' ...'
+        else:
+            for i in list(dataframe.columns):
+                if i==list(dataframe.columns):
+                    options_str += i
+                else:
+                    options_str += i + ', '
+            options_str = options_str[1:-2]
         self.l_options['text'] = 'Columns: ' + options_str
         if len(str(root.filename)) > 2:
             self.label_output['text'] = 'File ready.\n'
@@ -130,6 +144,7 @@ class popupWindow(object):
             self.l6['state'] = 'normal'
             self.ch['state'] = 'normal'
             self.ch2['state'] = 'normal'
+            self.fillall['state'] = 'normal'
 
 class popupWindow_predict(object):
     def __init__(self,master,model_fn):

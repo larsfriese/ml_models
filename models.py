@@ -89,24 +89,28 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     val_ds = df_to_dataset(val, shuffle=False, batch_size=batch_size)
     test_ds = df_to_dataset(test, shuffle=False, batch_size=batch_size)
 
+    # layers
+    # no difference between acivation functions and layers
+    relu = tf.keras.layers.LeakyReLU(alpha=0.1)
+
     # model
     model = tf.keras.Sequential()
 
     if len(dataframe.index)<100:
         model.add(feature_layer)
-        model.add(layers.Dense(64, activation='relu'))
-        model.add(layers.Dense(64, activation='relu'))
+        model.add(layers.Dense(64, activation=relu))
+        model.add(layers.Dense(64, activation=relu))
         model.add(layers.Dense(1, activation='sigmoid'))
     elif 100<len(dataframe.index)<1000:
         model.add(feature_layer)
-        model.add(layers.Dense(128, activation='relu'))
-        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(128, activation=relu))
         model.add(layers.Dense(1, activation='sigmoid'))
     elif 1000<len(dataframe.index):
         model.add(feature_layer)
-        model.add(layers.Dense(128, activation='relu'))
-        model.add(layers.Dense(128, activation='relu'))
-        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(128, activation=relu))
         model.add(layers.Dense(1, activation='sigmoid'))
 
 
