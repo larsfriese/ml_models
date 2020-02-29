@@ -126,14 +126,22 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
                         epochs=epochs_amount,
                         callbacks=cb_list)
     
-    acc = history.history['accuracy'][-1]
-    val_acc = history.history['val_accuracy'][-1]
+    last_acc = history.history['accuracy'][-1]
+    last_val_acc = history.history['val_accuracy'][-1]
+    
+    all_accs = 0
+    for i in history.history['accuracy']: all_accs += i
+    avg_acc = all_accs/(len(history.history['accuracy']))
+
+    val_all_accs = 0
+    for i in history.history['val_accuracy']: val_all_accs += i
+    avg_val_acc = val_all_accs/(len(history.history['val_accuracy']))
 
     # overfitting
-    if (acc-val_acc) > 0.3:
-        accuracy = 'Warning: The Model might be overfitting, as the training accuracy is\n {:.2f} and the validation accuracy is {:.2f}.\n Possible solutions:\n - use more training data\n - remove irrelevant features, add more relevant features.'.format(acc, val_acc)
+    if (avg_acc-avg_val_acc) > 0.3:
+        accuracy = 'Warning: The Model might be overfitting, as the training accuracy is\n {:.2f} and the validation accuracy is {:.2f}.\n Possible solutions:\n - use more training data\n - remove irrelevant features, add more relevant features.'.format(avg_acc, avg_val_acc)
     else:
-        accuracy = 'Training acc.: {:.2f} Test acc.: {:.2f}'.format(acc, val_acc)
+        accuracy = 'Training acc.: {:.2f} Test acc.: {:.2f}'.format(avg_acc, avg_val_acc)
 
     # make predictions for column based on feature columns
     predictions = model.predict(test_ds)
