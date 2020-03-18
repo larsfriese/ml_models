@@ -15,6 +15,17 @@ from tensorflow.keras import *
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 
+def i_outputs(model, dataset, layer_index):
+    layer_names = []
+    for layer in model.layers:
+        layer_names.append(layer.name)
+    model.summary()
+    intermediate_layer_model = Model(inputs=model.input,
+                                    outputs=model.get_layer(layer_names[layer_index]).output)
+    intermediate_output = intermediate_layer_model.predict(dataset)
+
+    return intermediate_output[0]
+    
 # COLLECTION OF NEURAL NETWORK FUNCTIONS
 
 # Linear regression models are neural networks without activation functions,
@@ -61,6 +72,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     # A utility method to create a feature column
     # and to transform a batch of data
     feature_columns = []
+    feature_layer_inputs = {}
     
     all_words = []
     if list_of_features_word[0] is not '': 
@@ -75,44 +87,58 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
                 word_column, all_words)
             text_embedding = feature_column.embedding_column(text, dimension=8)
             feature_columns.append(text_embedding)
-    
+            feature_layer_inputs[word_column] = tf.keras.Input(shape=(1,), name=word_column, dtype=tf.string)
+
     if list_of_features_numeric[0] is not '':
         # choose numeric features
         for header in list_of_features_numeric:
             feature_columns.append(feature_column.numeric_column(header))
+            feature_layer_inputs[header] = tf.keras.Input(shape=(1,), name=header)
         
     # layer with features
-    feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
-    
     batch_size = 32
+    feature_layer = tf.keras.layers.DenseFeatures(feature_columns, name='fl')#, input_shape=(batch_size,))
+
     train_ds = df_to_dataset(train, batch_size=batch_size)
     val_ds = df_to_dataset(val, shuffle=False, batch_size=batch_size)
     test_ds = df_to_dataset(test, shuffle=False, batch_size=batch_size)
 
     # layers
     # no difference between acivation functions and layers
-    relu = tf.keras.layers.LeakyReLU(alpha=0.1)
+    '''relu = tf.keras.layers.LeakyReLU(alpha=0.1)
 
     # model
     model = tf.keras.Sequential()
 
     if len(dataframe.index)<100:
+        #model.add(layers.InputLayer(input_shape=(0,), name='0'))
         model.add(feature_layer)
-        model.add(layers.Dense(64, activation=relu))
-        model.add(layers.Dense(64, activation=relu))
+        model.add(layers.Dense(64, activation=relu, name='1'))
+        model.add(layers.Dense(64, activation=relu, name='2'))
         model.add(layers.Dense(1, activation='sigmoid'))
     elif 100<len(dataframe.index)<1000:
         model.add(feature_layer)
-        model.add(layers.Dense(128, activation=relu))
-        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(128, activation=relu, name='1'))
+        model.add(layers.Dense(128, activation=relu, name='2'))
         model.add(layers.Dense(1, activation='sigmoid'))
     elif 1000<len(dataframe.index):
         model.add(feature_layer)
-        model.add(layers.Dense(128, activation=relu))
-        model.add(layers.Dense(128, activation=relu))
-        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(128, activation=relu, name='1'))
+        model.add(layers.Dense(128, activation=relu, name='2'))
+        model.add(layers.Dense(128, activation=relu, name='3'))
         model.add(layers.Dense(1, activation='sigmoid'))
 
+    '''
+
+    feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
+    feature_layer_outputs = feature_layer(feature_layer_inputs)
+
+    x = layers.Dense(128, activation='relu')(feature_layer_outputs)
+    x = layers.Dense(64, activation='relu')(x)
+
+    baggage_pred = layers.Dense(1, activation='sigmoid')(x)
+
+    model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
 
     cb_list=[EarlyStopping(monitor='accuracy', min_delta=0.005, patience=10, baseline=None, mode='auto')] if dropout==True else []
     # optimize the model
@@ -125,7 +151,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
                         validation_data=val_ds,
                         epochs=epochs_amount,
                         callbacks=cb_list)
-    
+
     last_acc = history.history['accuracy'][-1]
     last_val_acc = history.history['val_accuracy'][-1]
     
@@ -149,6 +175,10 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     for prediction, vars()[column_to_predict] in zip(predictions[:10], list(test_ds)[0][1][:10]): #vars()[column_to_predict] converts the string inputet to a variable
         prediction_result += 'Predicted ' + column_to_predict + ': {:.2%}'.format(prediction[0]) + ' | Actual outcome: ' + ('1' if bool(vars()[column_to_predict]) else '0') + '\n'
     
+    # TEST AREA
+    
+    print(i_outputs(model, val_ds, -2))
+
     if save_model==True:
         model.save('NNCSV_'+str(date.today()), '/') # save model for prediction use later
         model_info = '\nModel saved in folder:\n {}\n\n'.format(str(date.today()))
@@ -159,7 +189,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
 
 # NUMERICAL/TEXT FEATURES PREDICTION
 def predict_csv_features(url_to_csv, column_to_predict, model_filename):
-    model = keras.models.load_model(model_filename)
+    model = keras.models.load_model(model_filename) #custom_objects={'LeakyReLU': tf.keras.layers.LeakyReLU}
     dataframe = pd.read_csv(url_to_csv)
     #replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
@@ -188,8 +218,8 @@ def get_model_weights(model_filename):
     weights = []
     # last layer does not have weigts/biases, so [:-1]
     for count,l in enumerate(model.layers[:-1], 1):
-        vars()[str(count)] = model.layers[count].get_weights()[0]
-        weights.append(vars()[str(count)])
+        l = model.layers[count].get_weights()[0]
+        weights.append(l)
 
     return weights
 
@@ -197,7 +227,7 @@ def get_model_biases(model_filename):
     model = keras.models.load_model(model_filename)
     biases = []
     for count,l in enumerate(model.layers[:-1], 1):
-        vars()[str(count)] = model.layers[count].get_weights()[1]
-        biases.append(vars()[str(count)])
+        l = model.layers[count].get_weights()[1]
+        biases.append(l)
 
     return biases
