@@ -25,7 +25,43 @@ def i_outputs(model, dataset, layer_index):
     intermediate_output = intermediate_layer_model.predict(dataset)
 
     return intermediate_output[0]
+
+def filter(neurons_list):
+    max_neurons=[]
+    raw_list = neurons_list.tolist()
+    neurons_list.sort()
+    neurons_list = neurons_list[-5:]
+    for i in neurons_list:
+        index = raw_list.index(i)
+        max_neurons.append([index, i])
+    return max_neurons
+
+def analysis(model, url_to_csv):
+    dataframe = pd.read_csv(url_to_csv)
+    dataframe.head()
+    # replace nans and infinities in dataframe
+    dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
+
+    # A utility method to create a tf.data dataset from a Pandas Dataframe
+    def df_to_dataset(dataframe, shuffle=True, batch_size=32):
+        dataframe = dataframe.copy()
+        labels = dataframe.pop(column_to_predict)
+        ds = tf.data.Dataset.from_tensor_slices((dict(dataframe), labels))
+        if shuffle:
+            ds = ds.shuffle(buffer_size=len(dataframe))
+        ds = ds.batch(batch_size)
+        return ds
     
+    batch_size = 32 # A small batch sized is used for demonstration purposes
+    ds = df_to_dataset(dataframe, batch_size=batch_size)
+
+    list_var_d1 = i_outputs(model, ds, -3)
+    list_var_d2 = i_outputs(model, ds, -2)
+    neurons_d1 = filter(list_var_d1)
+    neurons_d2 = filter(list_var_d2)
+    
+    return [neurons_d1,neurons_d2] # list of 5 highest neurons in the 2 deep layers
+
 # COLLECTION OF NEURAL NETWORK FUNCTIONS
 
 # Linear regression models are neural networks without activation functions,
@@ -105,36 +141,20 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
 
     # layers
     # no difference between acivation functions and layers
-    '''relu = tf.keras.layers.LeakyReLU(alpha=0.1)
-
-    # model
-    model = tf.keras.Sequential()
-
-    if len(dataframe.index)<100:
-        #model.add(layers.InputLayer(input_shape=(0,), name='0'))
-        model.add(feature_layer)
-        model.add(layers.Dense(64, activation=relu, name='1'))
-        model.add(layers.Dense(64, activation=relu, name='2'))
-        model.add(layers.Dense(1, activation='sigmoid'))
-    elif 100<len(dataframe.index)<1000:
-        model.add(feature_layer)
-        model.add(layers.Dense(128, activation=relu, name='1'))
-        model.add(layers.Dense(128, activation=relu, name='2'))
-        model.add(layers.Dense(1, activation='sigmoid'))
-    elif 1000<len(dataframe.index):
-        model.add(feature_layer)
-        model.add(layers.Dense(128, activation=relu, name='1'))
-        model.add(layers.Dense(128, activation=relu, name='2'))
-        model.add(layers.Dense(128, activation=relu, name='3'))
-        model.add(layers.Dense(1, activation='sigmoid'))
-
-    '''
+    relu = tf.keras.layers.LeakyReLU(alpha=0.1)
 
     feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
     feature_layer_outputs = feature_layer(feature_layer_inputs)
 
-    x = layers.Dense(128, activation='relu')(feature_layer_outputs)
-    x = layers.Dense(64, activation='relu')(x)
+    if len(dataframe.index)<100:
+        x = layers.Dense(64, activation=relu)(feature_layer_outputs)
+        x = layers.Dense(64, activation=relu)(x)
+    elif 100<len(dataframe.index)<1000:
+        x = layers.Dense(128, activation=relu)(feature_layer_outputs)
+        x = layers.Dense(64, activation=relu)(x)
+    elif 1000<len(dataframe.index):
+        x = layers.Dense(128, activation=relu)(feature_layer_outputs)
+        x = layers.Dense(128, activation=relu)(x)
 
     baggage_pred = layers.Dense(1, activation='sigmoid')(x)
 
@@ -174,10 +194,6 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     prediction_result = ''
     for prediction, vars()[column_to_predict] in zip(predictions[:10], list(test_ds)[0][1][:10]): #vars()[column_to_predict] converts the string inputet to a variable
         prediction_result += 'Predicted ' + column_to_predict + ': {:.2%}'.format(prediction[0]) + ' | Actual outcome: ' + ('1' if bool(vars()[column_to_predict]) else '0') + '\n'
-    
-    # TEST AREA
-    
-    print(i_outputs(model, val_ds, -2))
 
     if save_model==True:
         model.save('NNCSV_'+str(date.today()), '/') # save model for prediction use later
