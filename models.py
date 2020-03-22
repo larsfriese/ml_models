@@ -19,7 +19,6 @@ def i_outputs(model, dataset, layer_index):
     layer_names = []
     for layer in model.layers:
         layer_names.append(layer.name)
-    model.summary()
     intermediate_layer_model = Model(inputs=model.input,
                                     outputs=model.get_layer(layer_names[layer_index]).output)
     intermediate_output = intermediate_layer_model.predict(dataset)
@@ -69,7 +68,7 @@ def analysis(model, url_to_csv):
 
 # neural net #1
 # NUMERICAL/TEXT FEATURES TRAINING
-def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input, dropout, save_model):
+def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input, dropout, save_model, analysis):
             
     dataframe = pd.read_csv(url_to_csv)
     dataframe.head()
@@ -145,16 +144,17 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
 
     feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
     feature_layer_outputs = feature_layer(feature_layer_inputs)
+    bias=True
 
     if len(dataframe.index)<100:
-        x = layers.Dense(64, activation=relu)(feature_layer_outputs)
-        x = layers.Dense(64, activation=relu)(x)
+        x = layers.Dense(64, activation=relu, use_bias=bias)(feature_layer_outputs)
+        x = layers.Dense(64, activation=relu, use_bias=bias)(x)
     elif 100<len(dataframe.index)<1000:
-        x = layers.Dense(128, activation=relu)(feature_layer_outputs)
-        x = layers.Dense(64, activation=relu)(x)
+        x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
+        x = layers.Dense(64, activation=relu, use_bias=bias)(x)
     elif 1000<len(dataframe.index):
-        x = layers.Dense(128, activation=relu)(feature_layer_outputs)
-        x = layers.Dense(128, activation=relu)(x)
+        x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
+        x = layers.Dense(128, activation=relu, use_bias=bias)(x)
 
     baggage_pred = layers.Dense(1, activation='sigmoid')(x)
 
@@ -200,6 +200,60 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
         model_info = '\nModel saved in folder:\n {}\n\n'.format(str(date.today()))
     else:
         model_info = ''
+    
+    # set all other features to 0 in dataframe
+    if analysis==True:
+        final_list=[]
+        for i in feature_columns:
+            fc=[]
+            for x in feature_columns:
+                fc.append(x.key)
+            fc.remove(i.key)
+            df = dataframe.copy()
+            for l in fc:
+                df[l].values[:] = 0
+            ds = df_to_dataset(df, shuffle=False, batch_size=batch_size)
+            
+            model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
+            list_var_d1 = i_outputs(model, ds, -3)
+            list_var_d2 = i_outputs(model, ds, -2)
+            neurons_d1 = filter(list_var_d1)
+            neurons_d2 = filter(list_var_d2)
+            final_list.append([i.key, neurons_d1, neurons_d1])
+        with open('analysis_{}.csv'.format('NNCSV_'+str(date.today())), 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['layer_name', 'layer1', 'layer2'])
+            for i in final_list:
+                writer.writerow([i[0], i[1], i[2]])
+        model_info += '\nAnalysis csv saved in csv file:\n {}\n\n'.format(str(date.today())+'.csv')
+            
+    
+    # only allow one input layer
+    '''
+    analysis = True
+    if analysis==True:
+        fc = feature_columns 
+        fli = feature_layer_inputs
+        for i in feature_columns:
+            for i2 in list(feature_layer_inputs):
+                if i2 == i.key:
+                    val = feature_layer_inputs[i2]
+                    feature_layer_inputs.clear()
+                    feature_layer_inputs[i2] = val
+                    feature_columns=[i]
+
+            bias=False
+
+            model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
+            list_var_d1 = i_outputs(model, ds, -3)
+            list_var_d2 = i_outputs(model, ds, -2)
+            neurons_d1 = filter(list_var_d1)
+            neurons_d2 = filter(list_var_d2)
+            print(neurons_d1)
+            print(neurons_d2)
+    
+            feature_columns = fc
+            feature_layer_inputs = fli '''
 
     return accuracy, prediction_result, model_info
 
