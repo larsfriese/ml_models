@@ -94,6 +94,9 @@ class popupWindow(object):
         self.save_var = IntVar()
         self.ch2=Checkbutton(top, text='Save Model', state=DISABLED, variable=self.save_var)
         self.ch2.grid(row=9, column=3)
+        self.analysis_var = IntVar()
+        self.ch3=Checkbutton(top, text='Model Analysis', state=DISABLED, variable=self.analysis_var)
+        self.ch3.grid(row=10, column=2)
         self.label_output = Label(top, text='')
         self.label_output.grid(row=8, pady=5, padx=5, column=0, columnspan=3, rowspan=2)
 
@@ -102,7 +105,7 @@ class popupWindow(object):
         self.value2=self.e2.get()
         self.value3=self.e3.get()
         self.value4=self.e4.get()
-        accuracy, prediction_result, model_info = neural_net_csv_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get(), self.dp_var.get(), self.save_var.get())
+        accuracy, prediction_result, model_info = neural_net_csv_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get(), self.dp_var.get(), self.save_var.get(), self.analysis_var.get())
         self.label_output['text'] = ''
         self.label_output['text'] += 'Training done. \n{}'.format(accuracy)
         self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
@@ -172,12 +175,14 @@ class popupWindow(object):
             self.l6['state'] = 'normal'
             self.ch['state'] = 'normal'
             self.ch2['state'] = 'normal'
+            self.ch3['state'] = 'normal'
             self.fillall['state'] = 'normal'
 
 class popupWindow_predict(object):
     def __init__(self,master,model_fn):
         global model_filename
         model_filename=model_fn
+        analysis_filename=None
         top=self.top=Toplevel(master)
         self.choose_button_predict = Button(top, text='Choose CSV file to predict', command=self.choose_predict_file)
         self.choose_button_predict.grid(row=1)
@@ -187,18 +192,22 @@ class popupWindow_predict(object):
         self.l_predict_filename.grid(row=1, column=1)
         self.l_model_filename=Label(top,text=model_filename, wraplengt=200)
         self.l_model_filename.grid(row=2, column=1)
-        self.b_weights=Button(top,text='Get weights of hidden layers in command line',command=self.get_weights, state=DISABLED)
-        self.b_weights.grid(row=3, column=1)
-        self.l_predict=Label(top,text='Column to predict:', state=DISABLED)
+        self.choose_analysis_button_predict = Button(top, text='Choose analysis file for prediction', command=self.choose_analysis_file)
+        self.choose_analysis_button_predict.grid(row=3)
+        self.l_analysis_filename=Label(top,text='', wraplengt=200)
+        self.l_analysis_filename.grid(row=3, column=1)
+        self.l_predict=Label(top,text='Feature to predict:', state=DISABLED)
         self.l_predict.grid(row=4)
         self.e_predict=Entry(top, state=DISABLED)
         self.e_predict.grid(row=4, column=1)
+        self.l2_predict=Label(top,text='Row to predict (which test sample) for analysis:', state=DISABLED)
+        self.l2_predict.grid(row=5)
+        self.e2_predict=Entry(top, state=DISABLED)
+        self.e2_predict.grid(row=5, column=1)
         self.b_predict=Button(top,text='Predict',command=self.run_predict, state=DISABLED)
-        self.b_predict.grid(row=5, column=1)
+        self.b_predict.grid(row=6, column=1)
         self.label_output_predict=Label(top,text='', state=DISABLED)
-        self.label_output_predict.grid(row=6, columnspan=2)
-        
-        if model_fn is not '': self.b_weights['state'] = 'normal'
+        self.label_output_predict.grid(row=7, columnspan=2)
 
     def choose_predict_file(self):
         global predict_filename
@@ -207,26 +216,34 @@ class popupWindow_predict(object):
             self.label_output_predict['text'] = 'Predict File ready.\n'
             self.e_predict['state'] = 'normal'
             self.l_predict['state'] = 'normal'
+            self.e2_predict['state'] = 'normal'
+            self.l2_predict['state'] = 'normal'
             self.b_predict['state'] = 'normal'
+            self.choose_analysis_button_predict['state'] = 'normal'
             self.label_output_predict['state'] = 'normal'
             self.l_predict_filename['text'] = predict_filename
     
     def entryValue_predict(self):
         return self.e_predict.get()
-    
-    def get_weights(self):
-        global model_filename
-        print(get_model_weights(model_filename))
+
+    def entryValue_predict2(self):
+        return self.e2_predict.get()
 
     def choose_model_file(self):
         global model_filename
         model_filename = filedialog.askdirectory(initialdir = os.getcwd())
         self.l_model_filename['text']=model_filename
         self.b_weights['state'] = 'normal'
+    
+    def choose_analysis_file(self):
+        global analysis_filename
+        analysis_filename = filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('csv files','*.csv'),('all files','*.*')))
+        self.l_analysis_filename['text']=analysis_filename
         
     def run_predict(self):
         global model_filename
-        results = predict_csv_features(predict_filename, self.entryValue_predict(), model_filename)
+        global analysis_filename
+        results = predict_csv_features(predict_filename, self.entryValue_predict(), model_filename, analysis_filename, self.entryValue_predict2())
         self.label_output_predict['text'] = 'Predictions:\n{}'.format(results)
 
 class mainWindow(object):
@@ -250,22 +267,26 @@ class mainWindow(object):
         # adding found files to list
         global dirs_found
         dirs_found = []
-        for count,dirs in enumerate(os.listdir(os.getcwd()),1):
-            if 'NN' in dirs:
-                dirs_found.append(dirs)
-                if 'CSV' in dirs:
-                    self.lb1.insert(count, 'CSV Model: '+ dirs.split('_', maxsplit=1)[-1])  
+        for count,dr in enumerate(os.listdir(os.getcwd()),1):
+            if 'ml_analysis' in dr:
+                dirs_found.append(dr)
+                self.lb1.insert(count, 'CSV Analysis: '+ dr)   
+            if 'ml_model' in dr:
+                dirs_found.append(dr)
+                self.lb1.insert(count, 'CSV Model: '+ dr)   
     
     # refreshing the list
     def refresh(self):
         global dirs_found
         dirs_found = []
         self.lb1.delete(0,'end')
-        for count,dirs in enumerate(os.listdir(os.getcwd()),1):
-            if 'NN' in dirs:
-                dirs_found.append(dirs)
-                if 'CSV' in dirs:
-                    self.lb1.insert(count, 'CSV Model: '+ dirs.split('_', maxsplit=1)[-1])  
+        for count,dr in enumerate(os.listdir(os.getcwd()),1):
+            if 'ml_analysis' in dr:
+                dirs_found.append(dr)
+                self.lb1.insert(count, 'CSV Analysis: '+ dr)   
+            if 'ml_model' in dr:
+                dirs_found.append(dr)
+                self.lb1.insert(count, 'CSV Model: '+ dr)   
 
     def popup(self):
         self.w=popupWindow(self.master)

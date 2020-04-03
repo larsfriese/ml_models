@@ -5,6 +5,7 @@ import csv, sys, os
 import pandas as pd
 from datetime import date
 import matplotlib.pyplot as plt
+from collections import Counter
 # tensorflow
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -15,25 +16,30 @@ from tensorflow.keras import *
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 
-def i_outputs(model, dataset, layer_index):
+neurons_reviewed = 20 # neurons reviewed for analysis
+dense_layers = 2 # dense layers of model
+
+def i_outputs(model, dataset, layer_index, sample_row_number): # raw list of neurons and values
     layer_names = []
     for layer in model.layers:
         layer_names.append(layer.name)
     intermediate_layer_model = Model(inputs=model.input,
                                     outputs=model.get_layer(layer_names[layer_index]).output)
     intermediate_output = intermediate_layer_model.predict(dataset)
+    
+    print(len(intermediate_output)) # number of samples in dataset
+    return intermediate_output[sample_row_number-1] # number of rwo for which analization should be done
 
-    return intermediate_output[0]
-
-def filter(neurons_list):
+def filter(neurons_list): # filtered list of neurons and values
+    global neurons_reviewed
     max_neurons=[]
     raw_list = neurons_list.tolist()
     neurons_list.sort()
-    neurons_list = neurons_list[-5:]
+    neurons_list = neurons_list[-neurons_reviewed:]
     for i in neurons_list:
         index = raw_list.index(i)
         max_neurons.append([index, i])
-    return max_neurons
+    return max_neurons #list of reviewd neurons plus value of neurons
 
 def analysis(model, url_to_csv):
     dataframe = pd.read_csv(url_to_csv)
@@ -54,8 +60,8 @@ def analysis(model, url_to_csv):
     batch_size = 32 # A small batch sized is used for demonstration purposes
     ds = df_to_dataset(dataframe, batch_size=batch_size)
 
-    list_var_d1 = i_outputs(model, ds, -3)
-    list_var_d2 = i_outputs(model, ds, -2)
+    list_var_d1 = i_outputs(model, ds, -3, 0)
+    list_var_d2 = i_outputs(model, ds, -2, 0)
     neurons_d1 = filter(list_var_d1)
     neurons_d2 = filter(list_var_d2)
     
@@ -69,7 +75,8 @@ def analysis(model, url_to_csv):
 # neural net #1
 # NUMERICAL/TEXT FEATURES TRAINING
 def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input, dropout, save_model, analysis):
-            
+    global neurons_reviewed, dense_layers
+
     dataframe = pd.read_csv(url_to_csv)
     dataframe.head()
     # replace nans and infinities in dataframe
@@ -196,7 +203,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
         prediction_result += 'Predicted ' + column_to_predict + ': {:.2%}'.format(prediction[0]) + ' | Actual outcome: ' + ('1' if bool(vars()[column_to_predict]) else '0') + '\n'
 
     if save_model==True:
-        model.save('NNCSV_'+str(date.today()), '/') # save model for prediction use later
+        model.save('ml_model_'+str(date.today()), '/') # save model for prediction use later
         model_info = '\nModel saved in folder:\n {}\n\n'.format(str(date.today()))
     else:
         model_info = ''
@@ -215,16 +222,26 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
             ds = df_to_dataset(df, shuffle=False, batch_size=batch_size)
             
             model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
-            list_var_d1 = i_outputs(model, ds, -3)
-            list_var_d2 = i_outputs(model, ds, -2)
+            list_var_d1 = i_outputs(model, ds, -3, 0)
+            list_var_d2 = i_outputs(model, ds, -2, 0)
             neurons_d1 = filter(list_var_d1)
             neurons_d2 = filter(list_var_d2)
             final_list.append([i.key, neurons_d1, neurons_d1])
-        with open('analysis_{}.csv'.format('NNCSV_'+str(date.today())), 'w', newline='') as file:
+            first_list=['layer_name']
+        with open('ml_analysis_{}.csv'.format(str(date.today())), 'w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['layer_name', 'layer1', 'layer2'])
+            for i in range(dense_layers):
+                for n in range(neurons_reviewed):
+                    first_list.append('layer{0}n{1}'.format(i, n))
+            writer.writerow(first_list)
             for i in final_list:
-                writer.writerow([i[0], i[1], i[2]])
+                temp_list=[]
+                temp_list.append(i[0])
+                for n in i[1]:
+                    temp_list.append(n) # only position of neuron, removing [0] will also give the worth for the neuron
+                for b in i[2]:
+                    temp_list.append(b)
+                writer.writerow(temp_list)
         model_info += '\nAnalysis csv saved in csv file:\n {}\n\n'.format(str(date.today())+'.csv')
             
     
@@ -258,7 +275,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     return accuracy, prediction_result, model_info
 
 # NUMERICAL/TEXT FEATURES PREDICTION
-def predict_csv_features(url_to_csv, column_to_predict, model_filename):
+def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis_csv, row_in_dataset):
     model = keras.models.load_model(model_filename) #custom_objects={'LeakyReLU': tf.keras.layers.LeakyReLU}
     dataframe = pd.read_csv(url_to_csv)
     #replace nans and infinities in dataframe
@@ -279,25 +296,38 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename):
     for prediction, vars()[column_to_predict] in zip(predictions, list(full_ds)[0][1]): #vars()[column_to_predict] converts the string inputet to a variable
         outcome = 1 if prediction[0] > 0.5 else 0
         prediction_result += 'Predicted ' + column_to_predict + ': {:.2}'.format(prediction[0]) + ' : Predicted Outcome: ' + str(outcome) + '\n'
+    
+    final_list=[]
+    list_var_d1 = i_outputs(model, full_ds, -3, int(row_in_dataset))
+    list_var_d2 = i_outputs(model, full_ds, -2, int(row_in_dataset))
+    neurons_d1 = filter(list_var_d1)
+    neurons_d2 = filter(list_var_d2)
+    final_list.append([neurons_d1, neurons_d1])
+    print(final_list)
+    
+    found = []
+    dataframe_analysis = pd.read_csv(analysis_csv) 
+    a = dataframe_analysis.values.tolist()
+    b = dataframe_analysis['layer_name'].tolist()
+    '''for i in a:
+        for n in b:
+            if i[0] == n:
+                i.remove(i[0])'''
+    print('a   ' + str(a))
+    print('b   ' + str(b))
+    for i in a:
+        for n in i:
+            for c in final_list[0][0]:
+                res = n.strip('][').split(', ')  # string to list
+                try: #compare numbers, if it doesnt work its a string
+                    if float(c[0]) == float(res[0]):
+                        found.append(i[0]) #col name
+                except:
+                    pass
+    
+    c = Counter(found)
+    prediction_result += '\nMost Important Features:\n'
+    for x, y in c.items():
+        prediction_result += str(x)+': '+str(y)+'\n'
 
     return prediction_result
-
-# get weights and biases of hidden layers of any model
-def get_model_weights(model_filename):
-    model = keras.models.load_model(model_filename)
-    weights = []
-    # last layer does not have weigts/biases, so [:-1]
-    for count,l in enumerate(model.layers[:-1], 1):
-        l = model.layers[count].get_weights()[0]
-        weights.append(l)
-
-    return weights
-
-def get_model_biases(model_filename):
-    model = keras.models.load_model(model_filename)
-    biases = []
-    for count,l in enumerate(model.layers[:-1], 1):
-        l = model.layers[count].get_weights()[1]
-        biases.append(l)
-
-    return biases
