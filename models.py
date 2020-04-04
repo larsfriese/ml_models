@@ -209,16 +209,26 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
         model_info = ''
     
     # set all other features to 0 in dataframe
+    print(feature_columns)
     if analysis==True:
         final_list=[]
-        for i in feature_columns:
-            fc=[]
-            for x in feature_columns:
-                fc.append(x.key)
-            fc.remove(i.key)
+        fc_int=[]
+        fc_str=[]
+        for i in list_of_features_numeric:
+            fc_int.append(i) # list of all numeric features
+
+        fc_int.remove(fc_int[-1])
+        for i in list_of_features_word:
+            fc_str.append(i) # list of all string features
+
+        for i in fc_int:
+            fc_temp=fc_int
+            fc_temp.remove(i)
+
             df = dataframe.copy()
-            for l in fc:
-                df[l].values[:] = 0
+            for l in fc_temp:
+                print(type(df[l].values[1]))
+                df[l].values[:] = np.float(0.0)
             ds = df_to_dataset(df, shuffle=False, batch_size=batch_size)
             
             model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
@@ -226,8 +236,27 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
             list_var_d2 = i_outputs(model, ds, -2, 0)
             neurons_d1 = filter(list_var_d1)
             neurons_d2 = filter(list_var_d2)
-            final_list.append([i.key, neurons_d1, neurons_d1])
+            final_list.append([i, neurons_d1, neurons_d1])
             first_list=['layer_name']
+        
+        for i in fc_str:
+            fc_temp=fc_str
+            fc_temp.remove(i)
+
+            df = dataframe.copy()
+            for l in fc_temp:
+                print(type(df[l].values[1]))
+                df[l].values[:] = '0'
+            ds = df_to_dataset(df, shuffle=False, batch_size=batch_size)
+            
+            model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
+            list_var_d1 = i_outputs(model, ds, -3, 0)
+            list_var_d2 = i_outputs(model, ds, -2, 0)
+            neurons_d1 = filter(list_var_d1)
+            neurons_d2 = filter(list_var_d2)
+            final_list.append([i, neurons_d1, neurons_d1])
+            first_list=['layer_name']
+
         with open('ml_analysis_{}.csv'.format(str(date.today())), 'w', newline='') as file:
             writer = csv.writer(file)
             for i in range(dense_layers):
