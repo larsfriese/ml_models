@@ -16,7 +16,7 @@ from tensorflow.keras import *
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 
-neurons_reviewed = 20 # neurons reviewed for analysis
+neurons_reviewed = 5 # neurons reviewed for analysis
 dense_layers = 2 # dense layers of model
 
 def i_outputs(model, dataset, layer_index, sample_row_number): # raw list of neurons and values
@@ -30,6 +30,17 @@ def i_outputs(model, dataset, layer_index, sample_row_number): # raw list of neu
     print(len(intermediate_output)) # number of samples in dataset
     return intermediate_output[sample_row_number-1] # number of rwo for which analization should be done
 
+def i_outputs_predict(model, dataset, layer_index): # raw list of neurons and values
+    layer_names = []
+    for layer in model.layers:
+        layer_names.append(layer.name)
+    intermediate_layer_model = Model(inputs=model.input,
+                                    outputs=model.get_layer(layer_names[layer_index]).output)
+    intermediate_output = intermediate_layer_model.predict(dataset)
+    
+    print(len(intermediate_output)) # number of samples in dataset
+    return intermediate_output[0] # number of rwo for which analization should be done
+
 def filter(neurons_list): # filtered list of neurons and values
     global neurons_reviewed
     max_neurons=[]
@@ -39,9 +50,39 @@ def filter(neurons_list): # filtered list of neurons and values
     for i in neurons_list:
         index = raw_list.index(i)
         max_neurons.append([index, i])
-    return max_neurons #list of reviewd neurons plus value of neurons
+    return max_neurons # list of reviewd neurons plus value of neurons
 
-def analysis(model, url_to_csv):
+def big_filter(model, dataset, layer_index, length_dataset): # filtered list of neurons and values for all the data in the dataset
+    global neurons_reviewed
+    final=[]
+    for i in range((length_dataset-1)):
+        print('\n ### '+str(round((100*(i/(length_dataset-1))), 2))+'% ### \n') # percentage of process done
+        n = i_outputs(model, dataset, layer_index, i)
+        n_list = n.tolist()
+        for c in n_list:
+            final.append([n_list.index(c), c])
+    #seen = set()
+    #final = [x for x in final if x[0] not in seen and not seen.add(x[0])] # delets duplicates
+    print(final)
+    final2=[]
+    for i in final: 
+        if i not in final2: 
+            final2.append(i)
+        else:
+            for x in final2:
+                if i[0]==x[0]:
+                    if i[1]>x[1]:
+                        final2.remove(x)
+                        final2.append(i)
+                    else:
+                        continue
+    print(final2)
+    final2.sort(key=lambda x: x[1]) # sort list for second element
+    final_cut = final2[-neurons_reviewed:]
+
+    return final_cut # list of reviewed neurons plus value of neurons for all data in dataset
+
+'''def analysis(model, url_to_csv):
     dataframe = pd.read_csv(url_to_csv)
     dataframe.head()
     # replace nans and infinities in dataframe
@@ -65,7 +106,7 @@ def analysis(model, url_to_csv):
     neurons_d1 = filter(list_var_d1)
     neurons_d2 = filter(list_var_d2)
     
-    return [neurons_d1,neurons_d2] # list of 5 highest neurons in the 2 deep layers
+    return [neurons_d1,neurons_d2] # list of 5 highest neurons in the 2 deep layers'''
 
 # COLLECTION OF NEURAL NETWORK FUNCTIONS
 
@@ -81,6 +122,8 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     dataframe.head()
     # replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
+    
+    dataframe_rows_amount = len(dataframe.index)
 
     train, test = train_test_split(dataframe, test_size=0.2)
     train, val = train_test_split(train, test_size=0.2)
@@ -158,9 +201,10 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
         x = layers.Dense(64, activation=relu, use_bias=bias)(x)
     elif 100<len(dataframe.index)<1000:
         x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
-        x = layers.Dense(64, activation=relu, use_bias=bias)(x)
+        x = layers.Dense(128, activation=relu, use_bias=bias)(x)
     elif 1000<len(dataframe.index):
         x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
+        x = layers.Dense(128, activation=relu, use_bias=bias)(x)
         x = layers.Dense(128, activation=relu, use_bias=bias)(x)
 
     baggage_pred = layers.Dense(1, activation='sigmoid')(x)
@@ -209,53 +253,44 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
         model_info = ''
     
     # set all other features to 0 in dataframe
-    print(feature_columns)
     if analysis==True:
         final_list=[]
-        fc_int=[]
-        fc_str=[]
+
         for i in list_of_features_numeric:
-            fc_int.append(i) # list of all numeric features
 
-        fc_int.remove(fc_int[-1])
-        for i in list_of_features_word:
-            fc_str.append(i) # list of all string features
-
-        for i in fc_int:
-            fc_temp=fc_int
+            fc_temp=list_of_features_numeric.copy()
             fc_temp.remove(i)
 
             df = dataframe.copy()
             for l in fc_temp:
-                print(type(df[l].values[1]))
                 df[l].values[:] = np.float(0.0)
             ds = df_to_dataset(df, shuffle=False, batch_size=batch_size)
             
             model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
-            list_var_d1 = i_outputs(model, ds, -3, 0)
-            list_var_d2 = i_outputs(model, ds, -2, 0)
-            neurons_d1 = filter(list_var_d1)
-            neurons_d2 = filter(list_var_d2)
-            final_list.append([i, neurons_d1, neurons_d1])
-            first_list=['layer_name']
+
+            neurons_d1 = big_filter(model, ds, -3, dataframe_rows_amount)
+            neurons_d2 = big_filter(model, ds, -2, dataframe_rows_amount)
+
+            final_list.append([i, neurons_d1, neurons_d2])
         
-        for i in fc_str:
-            fc_temp=fc_str
+        for i in list_of_features_word:
+            
+            fc_temp=list_of_features_word.copy()
             fc_temp.remove(i)
 
             df = dataframe.copy()
             for l in fc_temp:
-                print(type(df[l].values[1]))
                 df[l].values[:] = '0'
             ds = df_to_dataset(df, shuffle=False, batch_size=batch_size)
             
             model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
-            list_var_d1 = i_outputs(model, ds, -3, 0)
-            list_var_d2 = i_outputs(model, ds, -2, 0)
-            neurons_d1 = filter(list_var_d1)
-            neurons_d2 = filter(list_var_d2)
-            final_list.append([i, neurons_d1, neurons_d1])
-            first_list=['layer_name']
+
+            neurons_d3 = big_filter(model, ds, -3, dataframe_rows_amount)
+            neurons_d4 = big_filter(model, ds, -2, dataframe_rows_amount)
+
+            final_list.append([i, neurons_d3, neurons_d4])
+
+        first_list=['layer_name']
 
         with open('ml_analysis_{}.csv'.format(str(date.today())), 'w', newline='') as file:
             writer = csv.writer(file)
@@ -267,12 +302,12 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
                 temp_list=[]
                 temp_list.append(i[0])
                 for n in i[1]:
-                    temp_list.append(n) # only position of neuron, removing [0] will also give the worth for the neuron
+                    temp_list.append(n)
                 for b in i[2]:
                     temp_list.append(b)
                 writer.writerow(temp_list)
-        model_info += '\nAnalysis csv saved in csv file:\n {}\n\n'.format(str(date.today())+'.csv')
-            
+
+        model_info += '\nAnalysis csv saved in csv file:\n {}\n\n'.format(str(date.today())+'.csv')        
     
     # only allow one input layer
     '''
@@ -309,6 +344,15 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
     dataframe = pd.read_csv(url_to_csv)
     #replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
+    
+    l = [0]
+    for i in range(len(dataframe.index)):
+        l.append(int(i))
+    l.remove(int(row_in_dataset)-1)
+    print(l)
+    dataframe = dataframe.drop(dataframe.index[l])
+    print('###########\n')
+    print(dataframe)
 
     def df_to_dataset(dataframe, batch_size=32):
         dataframe = dataframe.copy()
@@ -320,19 +364,20 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
     batch_size = 32
     full_ds = df_to_dataset(dataframe, batch_size=batch_size)
     
-    predictions = model.predict(full_ds)
+    print(full_ds)
+
+    predictions = model.predict(full_ds, batch_size=batch_size)
     prediction_result = ''
     for prediction, vars()[column_to_predict] in zip(predictions, list(full_ds)[0][1]): #vars()[column_to_predict] converts the string inputet to a variable
         outcome = 1 if prediction[0] > 0.5 else 0
         prediction_result += 'Predicted ' + column_to_predict + ': {:.2}'.format(prediction[0]) + ' : Predicted Outcome: ' + str(outcome) + '\n'
     
     final_list=[]
-    list_var_d1 = i_outputs(model, full_ds, -3, int(row_in_dataset))
-    list_var_d2 = i_outputs(model, full_ds, -2, int(row_in_dataset))
+    list_var_d1 = i_outputs_predict(model, full_ds, -3)
+    list_var_d2 = i_outputs_predict(model, full_ds, -2)
     neurons_d1 = filter(list_var_d1)
     neurons_d2 = filter(list_var_d2)
     final_list.append([neurons_d1, neurons_d1])
-    print(final_list)
     
     found = []
     dataframe_analysis = pd.read_csv(analysis_csv) 
@@ -342,19 +387,19 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
         for n in b:
             if i[0] == n:
                 i.remove(i[0])'''
-    print('a   ' + str(a))
-    print('b   ' + str(b))
     for i in a:
         for n in i:
             for c in final_list[0][0]:
                 res = n.strip('][').split(', ')  # string to list
                 try: #compare numbers, if it doesnt work its a string
                     if float(c[0]) == float(res[0]):
+                        print(str(i[0])+'   '+str(float(res[1])/float(c[1])))
                         found.append(i[0]) #col name
                 except:
                     pass
     
     c = Counter(found)
+
     prediction_result += '\nMost Important Features:\n'
     for x, y in c.items():
         prediction_result += str(x)+': '+str(y)+'\n'
