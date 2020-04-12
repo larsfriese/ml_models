@@ -255,6 +255,11 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     # set all other features to 0 in dataframe
     if analysis==True:
         final_list=[]
+        
+        if '' in list_of_features_numeric:
+            list_of_features_numeric.remove('')
+        if '' in list_of_features_word:
+            list_of_features_word.remove('')
 
         for i in list_of_features_numeric:
 
@@ -291,6 +296,8 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
             final_list.append([i, neurons_d3, neurons_d4])
 
         first_list=['layer_name']
+        
+        print(final_list)
 
         with open('ml_analysis_{}.csv'.format(str(date.today())), 'w', newline='') as file:
             writer = csv.writer(file)
@@ -345,14 +352,12 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
     #replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
     
-    l = [0]
+    l = []
     for i in range(len(dataframe.index)):
         l.append(int(i))
     l.remove(int(row_in_dataset)-1)
-    print(l)
+    
     dataframe = dataframe.drop(dataframe.index[l])
-    print('###########\n')
-    print(dataframe)
 
     def df_to_dataset(dataframe, batch_size=32):
         dataframe = dataframe.copy()
@@ -393,7 +398,7 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
                 res = n.strip('][').split(', ')  # string to list
                 try: #compare numbers, if it doesnt work its a string
                     if float(c[0]) == float(res[0]):
-                        print(str(i[0])+'   '+str(float(res[1])/float(c[1])))
+                        print(str(i[0])+'   '+str(float(c[1])/float(res[1])))
                         found.append(i[0]) #col name
                 except:
                     pass
