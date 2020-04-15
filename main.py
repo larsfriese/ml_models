@@ -90,22 +90,25 @@ class popupWindow(object):
         self.b2=Button(top,text='Train',command=self.run_network, state=DISABLED)
         self.b2.grid(row=8, column=3)
         self.b3=Button(top,text='Clear Output',command=self.clear_output)
-        self.b3.grid(row=11, column=3)
+        self.b3.grid(row=12, column=3)
         self.save_var = IntVar()
         self.ch2=Checkbutton(top, text='Save Model', state=DISABLED, variable=self.save_var)
         self.ch2.grid(row=9, column=3)
         self.analysis_var = IntVar()
         self.ch3=Checkbutton(top, text='Model Analysis', state=DISABLED, variable=self.analysis_var)
         self.ch3.grid(row=10, column=3)
+        self.e5=Entry(top, state=DISABLED)
+        self.e5.grid(row=11, column=3)
         self.label_output = Label(top, text='')
-        self.label_output.grid(row=8, pady=5, padx=5, column=0, columnspan=3, rowspan=2)
+        self.label_output.grid(row=8, pady=5, padx=5, column=0, columnspan=3, rowspan=4)
 
     def run_network(self):
         self.value=self.e.get()
         self.value2=self.e2.get()
         self.value3=self.e3.get()
         self.value4=self.e4.get()
-        accuracy, prediction_result, model_info = neural_net_csv_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get(), self.dp_var.get(), self.save_var.get(), self.analysis_var.get())
+        self.value5=self.e5.get()
+        accuracy, prediction_result, model_info = neural_net_csv_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get(), self.dp_var.get(), self.save_var.get(), self.analysis_var.get(), int(self.entryValue5()))
         self.label_output['text'] = ''
         self.label_output['text'] += 'Training done. \n{}'.format(accuracy)
         self.label_output['text'] += '\nTest Predictions:\n {}'.format(prediction_result)
@@ -122,6 +125,9 @@ class popupWindow(object):
     
     def entryValue4(self):
         return self.value4
+
+    def entryValue5(self):
+        return self.value5
     
     def clear_output(self):
         self.label_output['text'] = ''
@@ -163,6 +169,7 @@ class popupWindow(object):
             self.e['state'] = 'normal'
             self.e2['state'] = 'normal'
             self.e3['state'] = 'normal'
+            self.e5['state'] = 'normal'
             self.l['state'] = 'normal'
             self.l2['state'] = 'normal'
             self.l3['state'] = 'normal'
