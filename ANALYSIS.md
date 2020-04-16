@@ -52,11 +52,18 @@ Feature 3: 1/5 = **20%**<br>
 
 ## Working Example with code:
 **Data needed:**
-[CSV Link](https://github.com/larsfriese/ml_models/blob/master/analysis/testdata1.csv "Full CSV Dataset")
 
+[CSV Link](https://github.com/larsfriese/ml_models/blob/master/analysis/testdata1.csv "Full CSV Dataset")
 Visual Representation of Data:
 
 ![](https://raw.githubusercontent.com/larsfriese/ml_models/master/analysis/analysis2.JPG)
+
+For this dataset the accuracy after training is at **0.99**.
+
+Now we want to know what the most important feature is for one prediction.
+We will take Row 189 as an Example. The Label is 1, and the values are:<br>
+Feature1: 0.692900156, Feature 2: 0.673047423
+
 
 
 
