@@ -27,7 +27,7 @@ Doing this for every feature will give us the most important neurons for each in
 The biggest valued neurons positions in the layer and values of a feature will be saved into a list like this:
 
 ```python
-list=['1',[[3,6.455],[1, 7.234], ...] #example values
+list=['1',[[3,6.455],[1, 7.234], ...] #(example values)
 ```
 list=[[feature1, [highest neurons layer one], [highest neurons layer two], [highest neurons layer three],[feature2, ...]]
 
@@ -36,7 +36,7 @@ The amount of neurons which are put in the list per layer per feature is called 
 **Step 3:** Prediction: Predict a Label from the dataset and save all neurons values and positions in the layer.
 Compare the heighest neurons with the ones from the saved list, and count occurences of same position of neurons in corresponding layers. A typical example would look like this:
 
-Feature | Ocurrences of neurons in both lists | 
+Feature | Ocurrences of neurons in both lists |  (Example Values)
 ------- | ----------------------------------- | 
 1       | 4                                   |
 3       | 1                                   |
@@ -44,6 +44,6 @@ Feature | Ocurrences of neurons in both lists |
 From this result we can conclude that the most important feature for this prediction is feature 1, as its most important neurons
 have been spotet 4 times in the new prediction. We can also calculate to what percentage this feature was important:
 
-Feature 1: 4/5 = **80%**
-Feature 2: 0/5 = **0%**
-Feature 3: 1/5 = **20%**
+Feature 1: 4/5 = **80%**<br>
+Feature 2: 0/5 = **0%**<br>
+Feature 3: 1/5 = **20%**<br>
