@@ -1,5 +1,7 @@
 # ml_models
-Machine Learning (Tensorflow) used in different ways to process/predict captured data.
+Machine Learning (Tensorflow) used in different ways to process/predict captured data.<br>
+This script is capable of analysing predictions of a machine learnin model and giving<br>
+a response about which features are the most important.
 
 ### Requirements
 - Python3 + every package listed in the requirements.txt file
