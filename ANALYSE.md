@@ -1,7 +1,7 @@
 # Analysing the importance of features in a neural network for individual predictions
 **Prerequisets**
 
-####Dataset1:
+#### Dataset1:
 
 Label | 1  | 2  | 3  |
 ----- | -- | -- | -- |
@@ -9,7 +9,7 @@ Label | 1  | 2  | 3  |
 0     | 20 | 0  | 0  |
 0     | 15 | 0  | -1 |
 
-####Model Structure:
+#### Model Structure:
 ![](https://miro.medium.com/max/1400/0*IlHu39jf2c7QC4kn.)
 
 > Source: https://medium.com/@jklein694/deep-dive-in-recurrent-neural-networks-for-binary-classification-project-cd15d89694da
