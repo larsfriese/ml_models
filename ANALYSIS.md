@@ -53,7 +53,7 @@ Feature 3: 1/5 = **20%**<br>
 ## Working Example with code:
 **Data needed:**
 
-[CSV Link](https://github.com/larsfriese/ml_models/blob/master/analysis/testdata1.csv "Full CSV Dataset")
+( [CSV Link](https://github.com/larsfriese/ml_models/blob/master/analysis/testdata1.csv "Full CSV Dataset") )
 Visual Representation of Data:
 
 ![](https://raw.githubusercontent.com/larsfriese/ml_models/master/analysis/analysis2.JPG)
