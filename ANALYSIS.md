@@ -1,5 +1,5 @@
 # Analysing the importance of features in a neural network for individual predictions
-**Data needed for Examples/Explanation:**
+**Data needed for examples/explanation:**
 
 #### Dataset1:
 
@@ -11,7 +11,7 @@ Label | 1  | 2  | 3  |
 
 #### Model Structure:
 
-3 input neurons, 1 output neuron
+3 input neurons, 2 dense layers each 4 neurons, 1 output neuron<br>
 3 features, binary classification of 1 label
 
 **Step 1:** Train a model with *Dataset1* and save it. The Saved Model will be *Model1*.
@@ -34,4 +34,16 @@ list=[[feature1, [highest neurons layer one], [highest neurons layer two], [high
 The amount of neurons which are put in the list per layer per feature is called *NeuronsAmount*.
 
 **Step 3:** Prediction: Predict a Label from the dataset and save all neurons values and positions in the layer.
-Compare the heighest neurons with the ones from the saved list, and count occurences of same position of neurons in corresponding layers.
+Compare the heighest neurons with the ones from the saved list, and count occurences of same position of neurons in corresponding layers. A typical example would look like this:
+
+Feature | Ocurrences of neurons in both lists | 
+------- | ----------------------------------- | 
+1       | 4                                   |
+3       | 1                                   |
+
+From this result we can conclude that the most important feature for this prediction is feature 1, as its most important neurons
+have been spotet 4 times in the new prediction. We can also calculate to what percentage this feature was important:
+
+Feature 1: 4/5 = **80%**
+Feature 2: 0/5 = **0%**
+Feature 3: 1/5 = **20%**
