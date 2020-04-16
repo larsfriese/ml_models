@@ -49,3 +49,15 @@ have been spotet 4 times in the new prediction. We can also calculate to what pe
 Feature 1: 4/5 = **80%**<br>
 Feature 2: 0/5 = **0%**<br>
 Feature 3: 1/5 = **20%**<br>
+
+## Working Example with code:
+**Data needed:**
+[CSV Link](https://github.com/larsfriese/ml_models/blob/master/analysis/testdata1.csv "Full CSV Dataset")
+
+Visual Representation of Data:
+
+![](https://raw.githubusercontent.com/larsfriese/ml_models/master/analysis/analysis2.JPG)
+
+
+
+
