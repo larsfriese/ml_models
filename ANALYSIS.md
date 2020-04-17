@@ -25,8 +25,8 @@ Label | 1  | 2  | 3  |
   The Code for the dense layers looks like this:<br>
   
   ```python
-   bias=False 
-  
+   bias=True 
+   # bias can be left on, as it is a constant
    elif 1000<=len(dataframe.index):
         x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
         x = layers.Dense(128, activation=relu, use_bias=bias)(x)
@@ -35,7 +35,8 @@ Label | 1  | 2  | 3  |
    ```
 
 </details>
-3 features, binary classification of 1 label<br>
+3 features, binary classification of 1 label
+
 
 **Step 1:** Train a model with *Dataset1* and save it. The Saved Model will be *Model1*.
 
