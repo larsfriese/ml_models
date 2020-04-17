@@ -1,4 +1,10 @@
 # Analysing the importance of features in a neural network for individual predictions
+
+The program tries to analyze for an individual prediction what the most crucial factors<br>
+were, which led to a certain decision. This currently only works for binary classification<br>
+and 1-Dimensional inputs.
+
+## Explanation:
 **Data needed for examples/explanation:**
 
 #### Dataset1:
@@ -31,15 +37,15 @@ list=['1',[[3,6.455],[1, 7.234], ...] # (example values)
 ```
 list=[[feature1, [highest neurons layer one], [highest neurons layer two], [highest neurons layer three],[feature2, ...]]
 
-The amount of neurons which are put in the list per layer per feature is called *NeuronsAmount*.
+The amount of neurons that are put in the list per layer per feature is called *NeuronsAmount*.
 
-**Step 3:** Prediction: Predict a Label from the dataset and save all neurons values and positions in the layer.
-Compare the heighest neurons with the ones from the saved list, and count occurences of same position of neurons in corresponding layers. A typical example would look like this:
+**Step 3:** Prediction: Predict a Label from the dataset and save all neuron's values and positions in the layer.
+Compare the highest neurons with the ones from the saved list, and count occurrences of the same position of neurons in corresponding layers. A typical example would look like this:
 
-Feature | Ocurrences of neurons in both lists |
-------- | ----------------------------------- | 
-1       | 4                                   |
-3       | 1                                   |
+Feature | Occurrences of neurons in both lists |
+------- | ------------------------------------ | 
+1       | 4                                    |
+3       | 1                                    |
 
 (example values)
 
@@ -58,7 +64,7 @@ Visual Representation of Data:
 
 ![](https://raw.githubusercontent.com/larsfriese/ml_models/master/analysis/analysis2.JPG)
 
-For this dataset the accuracy after training is at **0.99**.
+For this dataset, the accuracy after training is at **0.99**.
 
 Now we want to know what the most important feature is for one prediction.
 We will take Row **189** as an Example. The Label is 1, and the values are:<br>
@@ -67,23 +73,23 @@ Feature1: **0.692900156**, Feature 2: **0.673047423**
 Running the code for the prediction, we get the following results:
 (*NeuronsAmount* set to 20)
 
-Feature | Ocurrences of neurons in both lists |
-------- | ----------------------------------- | 
-1       | 6                                   |
-2       | 6                                   |
+Feature | Occurrences of neurons in both lists |
+------- | ------------------------------------ | 
+1       | 6                                    |
+2       | 6                                    |
 
-It seems like both features are equaliy important. This is correct,
-because when one is going under the value of 0.5 the Label wouldnt be 1.
+It seems like both features are equally important. This is correct,
+because when one is going under the value of 0.5 the Label wouldn't be 1.
 
 Lets look at another example, this time row **36**. The Values are: <br>
 Feature1: **0.017075238**, Feature 2: **0.807275634**
 
 Running the code for the prediction, we get the following results:
 
-Feature | Ocurrences of neurons in both lists |
-------- | ----------------------------------- | 
-1       | 12                                  |
-2       | 18                                  |
+Feature | Occurrences of neurons in both lists |
+------- | ------------------------------------ | 
+1       | 12                                   |
+2       | 18                                   |
 
 This time Feature 2 is more important as it is the only high value of the 2
 and therefore deciding if the Label is 0 or 1.
