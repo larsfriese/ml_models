@@ -20,9 +20,9 @@ Label | 1  | 2  | 3  |
 3 input neurons, 2 dense layers each 4 neurons, 1 output neuron<br>
 <details>
  <summary>More Details</summary>
-  In the code it is actually 3 sperate input layers, as there is a problem with extracting neuron
+  In the code it is actually 3 seperate input layers, as there is a problem with extracting neuron
   values out of a model with FeatureColumns.<br>
-  The Code for the dense layers looks like this:
+  The Code for the dense layers looks like this:<br>
   
   ```python
    bias=False 
@@ -35,7 +35,7 @@ Label | 1  | 2  | 3  |
    ```
 
 </details>
-3 features, binary classification of 1 label
+3 features, binary classification of 1 label<br>
 
 **Step 1:** Train a model with *Dataset1* and save it. The Saved Model will be *Model1*.
 
@@ -122,3 +122,14 @@ Feature | Occurrences of neurons in both lists |
 
 This time Feature 2 is more important as it is the only high value of the 2
 and therefore deciding if the Label is 0 or 1.
+
+We can now run a few more predictions for Label 0 data to see if this pattern stays.
+
+Row   | Feature1/Feature2 count of occurrences   | Feature 1   | Feature 2   |
+----- | ---------------------------------------- | ----------- | ----------- |
+623   | 17/7                                     | 0.951269498 |	0.356130208 |
+651   | 17/6                                     | 0.821661994 |	0.393711159 |
+845   | 15/5                                     | 0.961066891 |	0.101517442 |
+166   | 12/17                                    | 0.104049943 |	0.994388722 |
+
+As you can see, the most important feature is always the one above 0.5.
