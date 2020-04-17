@@ -18,6 +18,23 @@ Label | 1  | 2  | 3  |
 #### Model Structure:
 
 3 input neurons, 2 dense layers each 4 neurons, 1 output neuron<br>
+<details>
+ <summary>More Details</summary>
+  In the code it is actually 3 sperate input layers, as there is a problem with extracting neuron
+  values out of a model with FeatureColumns.<br>
+  The Code for the dense layers looks like this:
+  
+  ```python
+   bias=False 
+  
+   elif 1000<=len(dataframe.index):
+        x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
+        x = layers.Dense(128, activation=relu, use_bias=bias)(x)
+        x = layers.Dense(128, activation=relu, use_bias=bias)(x)
+        dense_layers=3
+   ```
+
+</details>
 3 features, binary classification of 1 label
 
 **Step 1:** Train a model with *Dataset1* and save it. The Saved Model will be *Model1*.
@@ -79,7 +96,7 @@ Feature | Occurrences of neurons in both lists |
 1       | 6                                    |
 2       | 6                                    |
 
-It seems like both features are equally important. This is correct,<br>
+It seems like both features are equally important. This is correct,
 because when one is going under the value of 0.5 the Label wouldn't be 1.
 
 We can now run a few more predictions for Label 1 data to see if this pattern stays.
@@ -103,5 +120,5 @@ Feature | Occurrences of neurons in both lists |
 1       | 12                                   |
 2       | 18                                   |
 
-This time Feature 2 is more important as it is the only high value of the 2<br>
+This time Feature 2 is more important as it is the only high value of the 2
 and therefore deciding if the Label is 0 or 1.
