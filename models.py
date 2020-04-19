@@ -16,8 +16,8 @@ from tensorflow.keras import *
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
 
-neurons_reviewed = 5 # neurons reviewed for analysis
-dense_layers = 2 # dense layers of model
+'''ANALYSIS ATTEMPT 1
+neurons_reviewed = 20 # neurons reviewed for analysis
 
 def i_outputs(model, dataset, layer_index, sample_row_number): # raw list of neurons and values
     layer_names = []
@@ -63,44 +63,21 @@ def big_filter(model, dataset, layer_index, length_dataset): # filtered list of 
             final.append([n_list.index(c), c])
 
     # getting biggest duplicates and removing small duplicates
+    final2=final.copy()
     for i in final: 
         for x in final:
             if i[0]==x[0]:
                 if i[1]>x[1]:
-                    final.remove(x)
+                    if x in final2:
+                        final2.remove(x)
                 else:
                     continue
     
-    final.sort(key=lambda x: x[1]) # sort list for second element
-    final_cut = final[-neurons_reviewed:]
+    final2.sort(key=lambda x: x[1]) # sort list for second element
+    final_cut = final2[-neurons_reviewed:]
 
-    return final_cut # list of reviewed neurons plus value of neurons for all data in dataset
+    return final_cut # list of reviewed neurons plus value of neurons for all data in dataset'''
 
-'''def analysis(model, url_to_csv):
-    dataframe = pd.read_csv(url_to_csv)
-    dataframe.head()
-    # replace nans and infinities in dataframe
-    dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
-
-    # A utility method to create a tf.data dataset from a Pandas Dataframe
-    def df_to_dataset(dataframe, shuffle=True, batch_size=32):
-        dataframe = dataframe.copy()
-        labels = dataframe.pop(column_to_predict)
-        ds = tf.data.Dataset.from_tensor_slices((dict(dataframe), labels))
-        if shuffle:
-            ds = ds.shuffle(buffer_size=len(dataframe))
-        ds = ds.batch(batch_size)
-        return ds
-    
-    batch_size = 32 # A small batch sized is used for demonstration purposes
-    ds = df_to_dataset(dataframe, batch_size=batch_size)
-
-    list_var_d1 = i_outputs(model, ds, -3, 0)
-    list_var_d2 = i_outputs(model, ds, -2, 0)
-    neurons_d1 = filter(list_var_d1)
-    neurons_d2 = filter(list_var_d2)
-    
-    return [neurons_d1,neurons_d2] # list of 5 highest neurons in the 2 deep layers'''
 
 # COLLECTION OF NEURAL NETWORK FUNCTIONS
 
@@ -109,7 +86,7 @@ def big_filter(model, dataset, layer_index, length_dataset): # filtered list of 
 
 # neural net #1
 # NUMERICAL/TEXT FEATURES TRAINING
-def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input, dropout, save_model, analysis, analysis_row_amount):
+def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input, dropout, save_model):
     global neurons_reviewed, dense_layers
 
     dataframe = pd.read_csv(url_to_csv)
@@ -117,7 +94,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     # replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
     
-    dataframe_rows_amount=len(dataframe.index) if analysis_row_amount>len(dataframe.index) else analysis_row_amount
+    #dataframe_rows_amount=len(dataframe.index) if analysis_row_amount>len(dataframe.index) else analysis_row_amount
 
     train, test = train_test_split(dataframe, test_size=0.2)
     train, val = train_test_split(train, test_size=0.2)
@@ -251,7 +228,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     
     print(model.summary())
 
-    # set all other features to 0 in dataframe
+    '''ANALISYS ATTEMPT 1 # set all other features to 0 in dataframe
     if analysis==True: 
         final_list=[]
         
@@ -278,6 +255,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
             for i in layer_list:
                 n = big_filter(model, ds, i, dataframe_rows_amount)
                 temp_list.append(n)
+            print(temp_list)
 
             final_list.append(temp_list)
         
@@ -323,43 +301,18 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
                         temp_list.append(n)
                 writer.writerow(temp_list)
 
-        model_info += '\nAnalysis csv saved in csv file:\n {}\n\n'.format(str(date.today())+'.csv')        
-    
-    # only allow one input layer
-    '''
-    analysis = True
-    if analysis==True:
-        fc = feature_columns 
-        fli = feature_layer_inputs
-        for i in feature_columns:
-            for i2 in list(feature_layer_inputs):
-                if i2 == i.key:
-                    val = feature_layer_inputs[i2]
-                    feature_layer_inputs.clear()
-                    feature_layer_inputs[i2] = val
-                    feature_columns=[i]
-
-            bias=False
-
-            model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
-            list_var_d1 = i_outputs(model, ds, -3)
-            list_var_d2 = i_outputs(model, ds, -2)
-            neurons_d1 = filter(list_var_d1)
-            neurons_d2 = filter(list_var_d2)
-            print(neurons_d1)
-            print(neurons_d2)
-    
-            feature_columns = fc
-            feature_layer_inputs = fli '''
+        model_info += '\nAnalysis csv saved in csv file:\n {}\n\n'.format(str(date.today())+'.csv')'''    
 
     return accuracy, prediction_result, model_info
 
 # NUMERICAL/TEXT FEATURES PREDICTION
-def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis_csv, row_in_dataset):
+def predict_csv_features(url_to_csv, column_to_predict, model_filename, row_in_dataset):
     model = keras.models.load_model(model_filename) #custom_objects={'LeakyReLU': tf.keras.layers.LeakyReLU}
     dataframe = pd.read_csv(url_to_csv)
     #replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
+
+    full_dataframe = dataframe.copy()
     
     l = []
     for i in range(len(dataframe.index)):
@@ -377,8 +330,6 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
     
     batch_size = 32
     full_ds = df_to_dataset(dataframe, batch_size=batch_size)
-    
-    print(full_ds)
 
     predictions = model.predict(full_ds, batch_size=batch_size)
     prediction_result = ''
@@ -386,6 +337,59 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
         outcome = 1 if prediction[0] > 0.5 else 0
         prediction_result += 'Predicted ' + column_to_predict + ': {:.2}'.format(prediction[0]) + ' : Predicted Outcome: ' + str(outcome) + '\n'
     
+    
+    # https://christophm.github.io/interpretable-ml-book/feature-importance.html
+    ### FEATURE IMPORTANCE ATTEMPT 2
+    mse = tf.keras.losses.MeanSquaredError()
+    importance=[]
+    features = list(full_dataframe.columns.values)
+    features.remove(column_to_predict)
+    for i in features:
+        true_output_for_feature = full_dataframe[column_to_predict].iloc[int(row_in_dataset)-1]
+        org_ds = df_to_dataset(full_dataframe, batch_size=batch_size)
+        predictions_org = model.predict(org_ds, batch_size=batch_size)
+        # eorig = L(y, f(X)) (e.g. mean squared error)
+        error_org = mse(true_output_for_feature, predictions_org[int(row_in_dataset)-1])
+
+        error_perm = 0
+        list_values = full_dataframe[i].tolist()
+        l = []
+        for e in range(len(full_dataframe.index)):
+            l.append(int(e))
+        l.remove(int(row_in_dataset)-1)
+
+        df = full_dataframe.copy()
+        df = df.drop(l)
+
+        for x in list_values:
+            
+            # Xperm
+            df.at[int(row_in_dataset)-1, i] = x
+            print(df)
+            perm_ds = df_to_dataset(df, batch_size=batch_size)
+            predictions_perm = model.predict(perm_ds, batch_size=batch_size)
+
+            #df[i] = np.random.permutation(full_dataframe[i].values)
+
+            # eperm = L(Y,f(Xperm))
+            error = mse(true_output_for_feature, predictions_perm[0])
+            error_perm += error.numpy()
+            print('\n\n'+str(((list_values.index(x)/len(list_values))*((1/len(features)))+(features.index(i)/len(features)))*100)+'%\n\n')
+        
+        error_p = error_perm/(len(list_values))
+
+        # FIj= eperm - eorig
+        importance.append([i, abs(error_p-error_org.numpy())])
+    # Sort features by descending FI
+    importance.sort(key=lambda x: x[1])
+    importance = list(reversed(importance))
+    ###
+    
+    prediction_result += '\nMost Important Features:'
+    for i in importance:
+        prediction_result += '\n'+str(i[0])+': '+str(i[1])
+
+    ''' ANALYSIS ATTEMPT 1
     final_list=[]
     list_var_d1 = i_outputs_predict(model, full_ds, -3)
     list_var_d2 = i_outputs_predict(model, full_ds, -2)
@@ -398,18 +402,14 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
     dataframe_analysis = pd.read_csv(analysis_csv) 
     a = dataframe_analysis.values.tolist()
     b = dataframe_analysis['layer_name'].tolist()
-    '''for i in a:
-        for n in b:
-            if i[0] == n:
-                i.remove(i[0])'''
-    print(a)
+
     for i in a:
         for n in i:
             for c in final_list[0][0]:
                 res = n.strip('][').split(', ')  # string to list
                 try: #compare numbers, if it doesnt work its a string
                     if float(c[0]) == float(res[0]):
-                        print(str(i[0])+'   '+str(float(c[1])/float(res[1])))
+                        print(str(i[0])+'   '+str(abs(float(c[1])-float(res[1])))+'    '+str(c[0])+'    '+str(res[0]))
                         found.append(i[0]) #col name
                         found_layers.append(i.index(n))
                 except:
@@ -418,14 +418,14 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
     layers=[]
     for i in found_layers:
         if i<=5:
-            layers.append(1)
+            layers.append('Dense1')
         elif 5<i<=10:
-            layers.append(2)
+            layers.append('Dense2')
         elif 10<i<=15:
-            layers.append(3)
+            layers.append('Dense3')
         else:
             continue
-    
+
     c = Counter(found)
     l = Counter(layers)
 
@@ -434,6 +434,6 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, analysis
         prediction_result += str(x)+': '+str(y)+'\n'
     prediction_result += '\nLayers:\n'
     for x, y in l.items():
-        prediction_result += str(x)+': '+str(y)+'\n'
+        prediction_result += str(x)+': '+str(y)+'\n'''
 
     return prediction_result
