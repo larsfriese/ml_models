@@ -306,88 +306,145 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     return accuracy, prediction_result, model_info
 
 # NUMERICAL/TEXT FEATURES PREDICTION
-def predict_csv_features(url_to_csv, column_to_predict, model_filename, row_in_dataset):
+def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_dataset, nth, deep_analysis, nth_deep):
     model = keras.models.load_model(model_filename) #custom_objects={'LeakyReLU': tf.keras.layers.LeakyReLU}
     dataframe = pd.read_csv(url_to_csv)
     #replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
-
     full_dataframe = dataframe.copy()
-    
-    l = []
-    for i in range(len(dataframe.index)):
-        l.append(int(i))
-    l.remove(int(row_in_dataset)-1)
-    
-    dataframe = dataframe.drop(dataframe.index[l])
 
+    batch_size = 32
     def df_to_dataset(dataframe, batch_size=32):
         dataframe = dataframe.copy()
         labels = dataframe.pop(column_to_predict)
         ds = tf.data.Dataset.from_tensor_slices((dict(dataframe), labels))
         ds = ds.batch(batch_size)
         return ds
-    
-    batch_size = 32
-    full_ds = df_to_dataset(dataframe, batch_size=batch_size)
 
-    predictions = model.predict(full_ds, batch_size=batch_size)
-    prediction_result = ''
-    for prediction, vars()[column_to_predict] in zip(predictions, list(full_ds)[0][1]): #vars()[column_to_predict] converts the string inputet to a variable
-        outcome = 1 if prediction[0] > 0.5 else 0
-        prediction_result += 'Predicted ' + column_to_predict + ': {:.2}'.format(prediction[0]) + ' : Predicted Outcome: ' + str(outcome) + '\n'
-    
-    
-    # https://christophm.github.io/interpretable-ml-book/feature-importance.html
-    ### FEATURE IMPORTANCE ATTEMPT 2
-    mse = tf.keras.losses.MeanSquaredError()
-    importance=[]
-    features = list(full_dataframe.columns.values)
-    features.remove(column_to_predict)
-    for i in features:
-        true_output_for_feature = full_dataframe[column_to_predict].iloc[int(row_in_dataset)-1]
-        org_ds = df_to_dataset(full_dataframe, batch_size=batch_size)
-        predictions_org = model.predict(org_ds, batch_size=batch_size)
-        # eorig = L(y, f(X)) (e.g. mean squared error)
-        error_org = mse(true_output_for_feature, predictions_org[int(row_in_dataset)-1])
+    if deep_analysis==True:
+        importance_deep=[]
+        for z in range(len(full_dataframe.index)):
+            if z % nth_deep is not 0:
+                continue
 
-        error_perm = 0
-        list_values = full_dataframe[i].tolist()
+            mse = tf.keras.losses.MeanSquaredError()
+            importance=[]
+            features = list(full_dataframe.columns.values)
+            features.remove(column_to_predict)
+            for i in features:
+                true_output_for_feature = full_dataframe[column_to_predict].iloc[int(z)-1]
+                org_ds = df_to_dataset(full_dataframe, batch_size=batch_size)
+                predictions_org = model.predict(org_ds, batch_size=batch_size)
+                # eorig = L(y, f(X)) (e.g. mean squared error)
+                error_org = mse(true_output_for_feature, predictions_org[int(z)-1])
+
+                error_perm = 0
+                list_values = full_dataframe[i].tolist()
+                l = []
+                for e in range(len(full_dataframe.index)):
+                    l.append(int(e))
+                l.remove(int(z))
+
+                df = full_dataframe.copy()
+                df = df.drop(l)
+
+                for c, x in enumerate(list_values):
+                    if c % nth is not 0:
+                        continue
+                    # Xperm
+                    df.at[int(z), i] = x
+                    #print(df)
+                    perm_ds = df_to_dataset(df, batch_size=batch_size)
+                    predictions_perm = model.predict(perm_ds, batch_size=batch_size)
+
+                    #df[i] = np.random.permutation(full_dataframe[i].values)
+
+                    # eperm = L(Y,f(Xperm))
+                    error = mse(true_output_for_feature, predictions_perm[0])
+                    error_perm += error.numpy()
+                    counter = float(((((list_values.index(x)/len(list_values))*((1/len(features)))+(features.index(i)/len(features))))*(1/len(dataframe.index))+(z/len(dataframe.index)))*100)
+                    if counter % 5 == 0:
+                        print(f'{counter}%')
+                
+                error_p = error_perm/(len(list_values))
+
+                # FIj= eperm - eorig
+                importance.append(abs(error_p-error_org.numpy()))
+            # Sort features by descending FI
+            #importance.sort(key=lambda x: x[1])
+            #importance = list(reversed(importance))
+            importance.append(true_output_for_feature)
+            importance.append(z)
+            importance_deep.append(importance)
+            #print(importance_deep)
+            prediction_result = []
+            ###
+    else:
+        # https://christophm.github.io/interpretable-ml-book/feature-importance.html
+        ### FEATURE IMPORTANCE ATTEMPT 2
+        mse = tf.keras.losses.MeanSquaredError()
+        importance=[]
+        features = list(full_dataframe.columns.values)
+        features.remove(column_to_predict)
+
         l = []
-        for e in range(len(full_dataframe.index)):
-            l.append(int(e))
+        for i in range(len(dataframe.index)):
+            l.append(int(i))
         l.remove(int(row_in_dataset)-1)
-
-        df = full_dataframe.copy()
-        df = df.drop(l)
-
-        for x in list_values:
-            
-            # Xperm
-            df.at[int(row_in_dataset)-1, i] = x
-            print(df)
-            perm_ds = df_to_dataset(df, batch_size=batch_size)
-            predictions_perm = model.predict(perm_ds, batch_size=batch_size)
-
-            #df[i] = np.random.permutation(full_dataframe[i].values)
-
-            # eperm = L(Y,f(Xperm))
-            error = mse(true_output_for_feature, predictions_perm[0])
-            error_perm += error.numpy()
-            print('\n\n'+str(((list_values.index(x)/len(list_values))*((1/len(features)))+(features.index(i)/len(features)))*100)+'%\n\n')
+        dataframe = dataframe.drop(dataframe.index[l])
         
-        error_p = error_perm/(len(list_values))
+        full_ds = df_to_dataset(dataframe, batch_size=batch_size)
 
-        # FIj= eperm - eorig
-        importance.append([i, abs(error_p-error_org.numpy())])
-    # Sort features by descending FI
-    importance.sort(key=lambda x: x[1])
-    importance = list(reversed(importance))
-    ###
-    
-    prediction_result += '\nMost Important Features:'
-    for i in importance:
-        prediction_result += '\n'+str(i[0])+': '+str(i[1])
+        predictions = model.predict(full_ds, batch_size=batch_size)
+        prediction_result = []
+        for prediction, vars()[column_to_predict] in zip(predictions, list(full_ds)[0][1]): #vars()[column_to_predict] converts the string inputet to a variable
+            outcome = 1 if prediction[0] > 0.5 else 0
+            prediction_result.append([prediction[0],outcome])
+
+        for i in features:
+            true_output_for_feature = full_dataframe[column_to_predict].iloc[int(row_in_dataset)-1]
+            org_ds = df_to_dataset(full_dataframe, batch_size=batch_size)
+            predictions_org = model.predict(org_ds, batch_size=batch_size)
+            # eorig = L(y, f(X)) (e.g. mean squared error)
+            error_org = mse(true_output_for_feature, predictions_org[int(row_in_dataset)-1])
+
+            error_perm = 0
+            list_values = full_dataframe[i].tolist()
+            l = []
+            for e in range(len(full_dataframe.index)):
+                l.append(int(e))
+            l.remove(int(row_in_dataset)-1)
+
+            df = full_dataframe.copy()
+            df = df.drop(l)
+
+            for c, x in enumerate(list_values):
+                if c % nth is not 0:
+                    continue
+                # Xperm
+                df.at[int(row_in_dataset)-1, i] = x
+                #print(df)
+                perm_ds = df_to_dataset(df, batch_size=batch_size)
+                predictions_perm = model.predict(perm_ds, batch_size=batch_size)
+
+                #df[i] = np.random.permutation(full_dataframe[i].values)
+
+                # eperm = L(Y,f(Xperm))
+                error = mse(true_output_for_feature, predictions_perm[0])
+                error_perm += error.numpy()
+                counter = float(((list_values.index(x)/len(list_values))*((1/len(features)))+(features.index(i)/len(features)))*100)
+                if counter % 10 == 0:
+                    print(f'{counter}%')
+            
+            error_p = error_perm/(len(list_values))
+
+            # FIj= eperm - eorig
+            importance.append([i, abs(error_p-error_org.numpy())])
+        # Sort features by descending FI
+        importance.sort(key=lambda x: x[1])
+        importance = list(reversed(importance))
+        ###
+
 
     ''' ANALYSIS ATTEMPT 1
     final_list=[]
@@ -435,5 +492,12 @@ def predict_csv_features(url_to_csv, column_to_predict, model_filename, row_in_d
     prediction_result += '\nLayers:\n'
     for x, y in l.items():
         prediction_result += str(x)+': '+str(y)+'\n'''
-
-    return prediction_result
+    
+    if deep_analysis==True:
+        prediction_result.extend(importance_deep)
+        features.append(column_to_predict)
+        features.append('row_number')
+        return [prediction_result, features, column_to_predict]
+    else:
+        prediction_result.extend(importance)
+        return prediction_result

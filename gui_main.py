@@ -104,7 +104,6 @@ class popupWindow(object):
         self.value2=self.e2.get()
         self.value3=self.e3.get()
         self.value4=self.e4.get()
-        self.value5=self.e5.get()
         accuracy, prediction_result, model_info = neural_net_csv_features(root.filename,str(self.entryValue()),[x.strip() for x in self.entryValue2().split(',')],[x.strip() for x in self.entryValue4().split(',')], int(self.entryValue3()), self.optimizer.get(), self.loss.get(), self.dp_var.get(), self.save_var.get())
         self.label_output['text'] = ''
         self.label_output['text'] += 'Training done. \n{}'.format(accuracy)
@@ -122,9 +121,6 @@ class popupWindow(object):
     
     def entryValue4(self):
         return self.value4
-
-    def entryValue5(self):
-        return self.value5
     
     def clear_output(self):
         self.label_output['text'] = ''
@@ -202,10 +198,14 @@ class popupWindow_predict(object):
         self.l2_predict.grid(row=5)
         self.e2_predict=Entry(top, state=DISABLED)
         self.e2_predict.grid(row=5, column=1)
+        self.l3_predict=Label(top,text='nth:', state=DISABLED)
+        self.l3_predict.grid(row=6)
+        self.e3_predict=Entry(top, state=DISABLED)
+        self.e3_predict.grid(row=6, column=1)
         self.b_predict=Button(top,text='Predict',command=self.run_predict, state=DISABLED)
-        self.b_predict.grid(row=6, column=1)
+        self.b_predict.grid(row=7, column=1)
         self.label_output_predict=Label(top,text='', state=DISABLED)
-        self.label_output_predict.grid(row=7, columnspan=2)
+        self.label_output_predict.grid(row=8, columnspan=2)
 
     def choose_predict_file(self):
         global predict_filename
@@ -216,6 +216,8 @@ class popupWindow_predict(object):
             self.l_predict['state'] = 'normal'
             self.e2_predict['state'] = 'normal'
             self.l2_predict['state'] = 'normal'
+            self.e3_predict['state'] = 'normal'
+            self.l3_predict['state'] = 'normal'
             self.b_predict['state'] = 'normal'
             self.label_output_predict['state'] = 'normal'
             self.l_predict_filename['text'] = predict_filename
@@ -225,6 +227,9 @@ class popupWindow_predict(object):
 
     def entryValue_predict2(self):
         return self.e2_predict.get()
+
+    def entryValue_predict3(self):
+        return self.e3_predict.get()
 
     def choose_model_file(self):
         global model_filename
@@ -240,7 +245,7 @@ class popupWindow_predict(object):
     def run_predict(self):
         global model_filename
         global analysis_filename
-        results = predict_csv_features(predict_filename, self.entryValue_predict(), model_filename, self.entryValue_predict2())
+        results = predict_csv_features(predict_filename, self.entryValue_predict(), model_filename, self.entryValue_predict2(), int(self.entryValue_predict3()))
         self.label_output_predict['text'] = 'Prediction:\n{}'.format(results)
 
 class mainWindow(object):
