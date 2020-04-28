@@ -4,6 +4,7 @@ import numpy as np
 import csv, sys, os
 import pandas as pd
 from datetime import date
+import time
 import matplotlib.pyplot as plt
 from collections import Counter
 # tensorflow
@@ -86,13 +87,22 @@ def big_filter(model, dataset, layer_index, length_dataset): # filtered list of 
 
 # neural net #1
 # NUMERICAL/TEXT FEATURES TRAINING
-def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_numeric, list_of_features_word, epochs_amount, optimizer_input, loss_input, dropout, save_model):
+def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features, epochs_amount, optimizer_input, loss_input, dropout, save_model):
     global neurons_reviewed, dense_layers
 
     dataframe = pd.read_csv(url_to_csv)
     dataframe.head()
     # replace nans and infinities in dataframe
     dataframe.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
+    
+    list_of_features_numeric=[]
+    list_of_features_word=[]
+    for i in list_of_features:
+        first_column = dataframe[i].iloc[1]
+        if type(first_column)==str:
+            list_of_features_word.append(i)
+        else:
+            list_of_features_numeric.append(i)
     
     #dataframe_rows_amount=len(dataframe.index) if analysis_row_amount>len(dataframe.index) else analysis_row_amount
 
@@ -128,10 +138,10 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     # A utility method to create a feature column
     # and to transform a batch of data
     feature_columns = []
-    feature_layer_inputs = {}
+    #feature_layer_inputs = {}
     
     all_words = []
-    if list_of_features_word[0] is not '': 
+    if list_of_features_word is not []: 
         # find all words
         for word_column in list_of_features_word:
             for i in dataframe[word_column].tolist():
@@ -143,17 +153,18 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
                 word_column, all_words)
             text_embedding = feature_column.embedding_column(text, dimension=8)
             feature_columns.append(text_embedding)
-            feature_layer_inputs[word_column] = tf.keras.Input(shape=(1,), name=word_column, dtype=tf.string)
+            #feature_layer_inputs[word_column] = tf.keras.Input(shape=(1,), name=word_column, dtype=tf.string)
 
-    if list_of_features_numeric[0] is not '':
+    if list_of_features_numeric is not []:
         # choose numeric features
         for header in list_of_features_numeric:
             feature_columns.append(feature_column.numeric_column(header))
-            feature_layer_inputs[header] = tf.keras.Input(shape=(1,), name=header)
+            #feature_layer_inputs[header] = tf.keras.Input(shape=(1,), name=header)
         
     # layer with features
     batch_size = 32
-    feature_layer = tf.keras.layers.DenseFeatures(feature_columns, name='fl')#, input_shape=(batch_size,))
+    feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
+    #feature_layer = tf.keras.layers.DenseFeatures(feature_columns, name='fl')#, input_shape=(batch_size,))
 
     train_ds = df_to_dataset(train, batch_size=batch_size)
     val_ds = df_to_dataset(val, shuffle=False, batch_size=batch_size)
@@ -163,27 +174,40 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
     # no difference between acivation functions and layers
     relu = tf.keras.layers.LeakyReLU(alpha=0.1)
 
-    feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
-    feature_layer_outputs = feature_layer(feature_layer_inputs)
+    #feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
+    #feature_layer_outputs = feature_layer(feature_layer_inputs)
+    model = tf.keras.Sequential()
     bias=True
 
     if len(dataframe.index)<100:
-        x = layers.Dense(64, activation=relu, use_bias=bias)(feature_layer_outputs)
-        x = layers.Dense(64, activation=relu, use_bias=bias)(x)
+        #x = layers.Dense(64, activation=relu, use_bias=bias)(feature_layer_outputs)
+        #x = layers.Dense(64, activation=relu, use_bias=bias)(x)
+        model.add(feature_layer)
+        model.add(layers.Dense(64, activation=relu))
+        model.add(layers.Dense(64, activation=relu))
+        model.add(layers.Dense(1, activation='sigmoid'))
         dense_layers=2
     elif 100<=len(dataframe.index)<1000:
-        x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
-        x = layers.Dense(128, activation=relu, use_bias=bias)(x)
+        #x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
+        #x = layers.Dense(128, activation=relu, use_bias=bias)(x)
+        model.add(feature_layer)
+        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(1, activation='sigmoid'))
         dense_layers=2
     elif 1000<=len(dataframe.index):
-        x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
-        x = layers.Dense(128, activation=relu, use_bias=bias)(x)
-        x = layers.Dense(128, activation=relu, use_bias=bias)(x)
+        #x = layers.Dense(128, activation=relu, use_bias=bias)(feature_layer_outputs)
+        #x = layers.Dense(128, activation=relu, use_bias=bias)(x)
+        #x = layers.Dense(128, activation=relu, use_bias=bias)(x)
+        model.add(feature_layer)
+        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(128, activation=relu))
+        model.add(layers.Dense(1, activation='sigmoid'))
         dense_layers=3
 
-    baggage_pred = layers.Dense(1, activation='sigmoid')(x)
-
-    model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
+    #baggage_pred = layers.Dense(1, activation='sigmoid')(x)
+    #model = keras.Model(inputs=[v for v in feature_layer_inputs.values()], outputs=baggage_pred)
 
     cb_list=[EarlyStopping(monitor='accuracy', min_delta=0.005, patience=10, baseline=None, mode='auto')] if dropout==True else []
     # optimize the model
@@ -210,19 +234,13 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
 
     # overfitting
     if (avg_acc-avg_val_acc) > 0.3:
-        accuracy = 'Warning: The Model might be overfitting, as the training accuracy is\n {:.2f} and the validation accuracy is {:.2f}.\n Possible solutions:\n - use more training data\n - remove irrelevant features, add more relevant features.'.format(avg_acc, avg_val_acc)
+        accuracy = '\nWarning: The Model might be overfitting, as the training accuracy is\n {:.2f} and the validation accuracy is {:.2f}.\n Possible solutions:\n - use more training data\n - remove irrelevant features, add more relevant features.'.format(avg_acc, avg_val_acc)
     else:
-        accuracy = 'Training acc.: {:.2f} Test acc.: {:.2f}'.format(avg_acc, avg_val_acc)
-
-    # make predictions for column based on feature columns
-    predictions = model.predict(test_ds)
-    prediction_result = ''
-    for prediction, vars()[column_to_predict] in zip(predictions[:10], list(test_ds)[0][1][:10]): #vars()[column_to_predict] converts the string inputet to a variable
-        prediction_result += 'Predicted ' + column_to_predict + ': {:.2%}'.format(prediction[0]) + ' | Actual outcome: ' + ('1' if bool(vars()[column_to_predict]) else '0') + '\n'
+        accuracy = '\nTraining acc.: {:.2f} Test acc.: {:.2f}'.format(avg_acc, avg_val_acc)
 
     if save_model==True:
         model.save('ml_model_'+str(date.today()), '/') # save model for prediction use later
-        model_info = '\nModel saved in folder:\n {}\n\n'.format(str(date.today()))
+        model_info = 'Model saved in folder: {}\n'.format(str(date.today()))
     else:
         model_info = ''
     
@@ -303,10 +321,10 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features_nume
 
         model_info += '\nAnalysis csv saved in csv file:\n {}\n\n'.format(str(date.today())+'.csv')'''    
 
-    return accuracy, prediction_result, model_info
+    return [accuracy, model_info]
 
 # NUMERICAL/TEXT FEATURES PREDICTION
-def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_dataset, nth, deep_analysis, nth_deep):
+def predict_csv_features(model_filename, url_to_csv, column_to_predict, features, row_in_dataset, nth, deep_analysis, nth_deep):
     model = keras.models.load_model(model_filename) #custom_objects={'LeakyReLU': tf.keras.layers.LeakyReLU}
     dataframe = pd.read_csv(url_to_csv)
     #replace nans and infinities in dataframe
@@ -323,14 +341,27 @@ def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_d
 
     if deep_analysis==True:
         importance_deep=[]
-        for z in range(len(full_dataframe.index)):
+
+        full_ds = df_to_dataset(full_dataframe, batch_size=batch_size)
+        predictions = model.predict(full_ds, batch_size=batch_size)
+        predictions = predictions.tolist()
+        for i in predictions:
+            if i[0]>=0.5:
+                predictions[predictions.index(i)]=1
+            else:
+                predictions[predictions.index(i)]=0
+        full_dataframe[column_to_predict]=predictions
+
+        t0 = time.time()
+        for z in range(1, len(full_dataframe.index)+1):
             if z % nth_deep is not 0:
                 continue
 
             mse = tf.keras.losses.MeanSquaredError()
             importance=[]
-            features = list(full_dataframe.columns.values)
-            features.remove(column_to_predict)
+
+            t1 = time.time()
+            
             for i in features:
                 true_output_for_feature = full_dataframe[column_to_predict].iloc[int(z)-1]
                 org_ds = df_to_dataset(full_dataframe, batch_size=batch_size)
@@ -343,16 +374,18 @@ def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_d
                 l = []
                 for e in range(len(full_dataframe.index)):
                     l.append(int(e))
-                l.remove(int(z))
+                l.remove(int(z)-1)
 
                 df = full_dataframe.copy()
                 df = df.drop(l)
+
+                t2 = time.time()
 
                 for c, x in enumerate(list_values):
                     if c % nth is not 0:
                         continue
                     # Xperm
-                    df.at[int(z), i] = x
+                    df.at[int(z)-1, i] = x
                     #print(df)
                     perm_ds = df_to_dataset(df, batch_size=batch_size)
                     predictions_perm = model.predict(perm_ds, batch_size=batch_size)
@@ -363,29 +396,37 @@ def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_d
                     error = mse(true_output_for_feature, predictions_perm[0])
                     error_perm += error.numpy()
                     counter = float(((((list_values.index(x)/len(list_values))*((1/len(features)))+(features.index(i)/len(features))))*(1/len(dataframe.index))+(z/len(dataframe.index)))*100)
-                    if counter % 5 == 0:
-                        print(f'{counter}%')
-                
+                    #if counter % 5 == 0:
+                    print(f'{counter}%')
+                    t3 = time.time()
+                    
                 error_p = error_perm/(len(list_values))
-
                 # FIj= eperm - eorig
                 importance.append(abs(error_p-error_org.numpy()))
+                t4 = time.time()
+
             # Sort features by descending FI
             #importance.sort(key=lambda x: x[1])
             #importance = list(reversed(importance))
-            importance.append(true_output_for_feature)
+            #print(((t1-t0)*(len(full_dataframe.index)/nth_deep))+((t2-t1)*(len(features))*(len(full_dataframe.index)/nth_deep))+((t3-t2)*(len(list_values)/nth)*(len(features)))))
+            t5 = time.time()
+            #print(f'{(t0-t5)*len(full_dataframe.index)}')
+
+            for i in features:
+                importance.append(full_dataframe[i].iloc[int(z-1)])
             importance.append(z)
+            importance.append(true_output_for_feature)
             importance_deep.append(importance)
             #print(importance_deep)
             prediction_result = []
             ###
+
+        print(f'Process took: {round(t5-t0, 2)}s')
     else:
         # https://christophm.github.io/interpretable-ml-book/feature-importance.html
         ### FEATURE IMPORTANCE ATTEMPT 2
         mse = tf.keras.losses.MeanSquaredError()
         importance=[]
-        features = list(full_dataframe.columns.values)
-        features.remove(column_to_predict)
 
         l = []
         for i in range(len(dataframe.index)):
@@ -400,7 +441,8 @@ def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_d
         for prediction, vars()[column_to_predict] in zip(predictions, list(full_ds)[0][1]): #vars()[column_to_predict] converts the string inputet to a variable
             outcome = 1 if prediction[0] > 0.5 else 0
             prediction_result.append([prediction[0],outcome])
-
+        
+        t0 = time.time()
         for i in features:
             true_output_for_feature = full_dataframe[column_to_predict].iloc[int(row_in_dataset)-1]
             org_ds = df_to_dataset(full_dataframe, batch_size=batch_size)
@@ -424,6 +466,7 @@ def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_d
                 # Xperm
                 df.at[int(row_in_dataset)-1, i] = x
                 #print(df)
+                #print(df)
                 perm_ds = df_to_dataset(df, batch_size=batch_size)
                 predictions_perm = model.predict(perm_ds, batch_size=batch_size)
 
@@ -443,6 +486,8 @@ def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_d
         # Sort features by descending FI
         importance.sort(key=lambda x: x[1])
         importance = list(reversed(importance))
+        t1 = time.time()
+        print(f'Process took: {round(t1-t0, 2)}s')
         ###
 
 
@@ -495,8 +540,14 @@ def predict_csv_features(model_filename, url_to_csv, column_to_predict, row_in_d
     
     if deep_analysis==True:
         prediction_result.extend(importance_deep)
-        features.append(column_to_predict)
+        features_values=[]
+        for i in features:
+            features_values.append(i+'_val')
+        for i in features:
+            features[features.index(i)]=i+'_imp'
+        features.extend(features_values)
         features.append('row_number')
+        features.append(column_to_predict)
         return [prediction_result, features, column_to_predict]
     else:
         prediction_result.extend(importance)
