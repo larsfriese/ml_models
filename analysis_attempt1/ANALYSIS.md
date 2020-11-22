@@ -45,7 +45,7 @@ Example: We set all input values 0 except the ones for Feature 1.<br>
 When we put *Dataset1* through it now, the neuron values will only be affected by Feature 1, which will give us a clear<br>
 picture of which neurons get activated by Feature 1 and to what value.
 
-![](https://raw.githubusercontent.com/larsfriese/ml_models/master/analysis/analysis1.JPG)
+![](https://raw.githubusercontent.com/larsfriese/ml_models/master/analysis1.JPG)
 
 Doing this for every feature will give us the most important neurons for each individual feature.<br>
 The biggest valued neurons positions in the layer and values of a feature will be saved into a list like this:<br>
@@ -78,10 +78,10 @@ Feature 3: 1/5 = **20%**<br>
 ## Working Example:
 **Data needed:**
 
-( [CSV Link](https://github.com/larsfriese/ml_models/blob/master/analysis/testdata1.csv "Full CSV Dataset") )
+( [CSV Link](https://github.com/larsfriese/ml_models/blob/master/testdata1.csv "Full CSV Dataset") )
 Visual Representation of Data:
 
-![](https://raw.githubusercontent.com/larsfriese/ml_models/master/analysis/analysis2.JPG)
+![](https://raw.githubusercontent.com/larsfriese/ml_models/master/analysis2.JPG)
 
 For this dataset, the accuracy after training is at **0.99**.
 
