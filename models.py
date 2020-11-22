@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 # basic imports
 import numpy as np
-import csv, sys, os, time
+import csv, sys, os, time, math
 import pandas as pd
 from datetime import date
 import matplotlib.pyplot as plt
@@ -93,20 +93,20 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features, epo
 
     model = tf.keras.Sequential()
     bias=True
-
-    if len(dataframe.index)<100:
+    
+    if len(dataframe.index)<1000:
         model.add(feature_layer)
         model.add(layers.Dense(64, activation=relu))
         model.add(layers.Dense(64, activation=relu))
         model.add(layers.Dense(1, activation='sigmoid'))
         dense_layers=2
-    elif 100<=len(dataframe.index)<1000:
+    elif 1000<=len(dataframe.index)<10000:
         model.add(feature_layer)
         model.add(layers.Dense(128, activation=relu))
         model.add(layers.Dense(128, activation=relu))
         model.add(layers.Dense(1, activation='sigmoid'))
         dense_layers=2
-    elif 1000<=len(dataframe.index):
+    elif 10000<=len(dataframe.index):
         model.add(feature_layer)
         model.add(layers.Dense(128, activation=relu))
         model.add(layers.Dense(128, activation=relu))
@@ -145,7 +145,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features, epo
         accuracy = '\nTraining acc.: {:.2f} Test acc.: {:.2f}'.format(avg_acc, avg_val_acc)
 
     if save_model==True:
-        model.save('ml_model_'+str(date.today()), '/') # save model for prediction use later
+        model.save(os.getcwd() + 'ml_model_'+str(date.today()), '/') # save model for prediction use later
         model_info = 'Model saved in folder: {}\n'.format(str(date.today()))
     else:
         model_info = ''
