@@ -3,153 +3,11 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
-def s2021():
-
-	#! CANT PROCESS SCORES THAT HAVE 2 DIGITS
-	#! ONLY WORKS FOR SEASON 2020/2021
-
-	max_matchday=5
-	curr_matchday=1 #changes in loop
-
-	dict_avg_worth_2020 = {
-	"Hertha BSC": [1, 8.69],
-	"Eintracht Frankfurt": [2, 6.16],
-	"Borussia Mönchengladbach": [3, 10.11],
-	"1. FC Union Berlin": [4, 2.08],
-	"Bayer 04 Leverkusen": [5, 12.44],
-	"RB Leipzig": [6, 17.15],
-	"1. FSV Mainz 05": [7, 3.27],
-	"VfB Stuttgart": [8, 2.42],
-	"FC Augsburg": [9, 3.71],
-	"Borussia Dortmund": [10, 21.75],
-	"Arminia Bielefeld": [11, 1.68],
-	"1. FC Köln": [12, 3.18],
-	"FC Schalke 04": [13, 5.92],
-	"Werder Bremen": [14, 3.94],
-	"TSG Hoffenheim": [15, 7.47],
-	"Bayern München": [16, 33.42],
-	"SC Freiburg": [17, 3.93],
-	"VfL Wolfsburg": [18, 7.47]
-	}	
-
-	def form(number):
-		dict_teams={
-			1: "https://www.betexplorer.com/soccer/team/hertha-berlin/2y0u8Wrq/results/",
-			2: "https://www.betexplorer.com/soccer/team/eintracht-frankfurt/8vndvXTk/results/",
-			3: "https://www.betexplorer.com/soccer/team/b-monchengladbach/88HSzjDr/results/",
-			4: "https://www.betexplorer.com/soccer/team/union-berlin/pzHW4oaE/results/",
-			5: "https://www.betexplorer.com/soccer/team/bayer-leverkusen/4jcj2zMd/results/",
-			6: "https://www.betexplorer.com/soccer/team/rb-leipzig/KbS1suSm/results/",
-			7: "https://www.betexplorer.com/soccer/team/mainz/EuakNmc1/results/",
-			8: "https://www.betexplorer.com/soccer/team/vfb-stuttgart/nJQmYp1B/results/",
-			9: "https://www.betexplorer.com/soccer/team/augsburg/fTVNku3I/results/",
-			10: "https://www.betexplorer.com/soccer/team/dortmund/nP1i5US1/results/",
-			11: "https://www.betexplorer.com/soccer/team/arminia-bielefeld/pp38UXK8/results/",
-			12: "https://www.betexplorer.com/soccer/team/1-fc-koln/WG9pOTse/results/",
-			13: "https://www.betexplorer.com/soccer/team/schalke/0Ija0Ej9/",
-			14: "https://www.betexplorer.com/soccer/team/werder-bremen/Ig1f1fy3/results/",
-			15: "https://www.betexplorer.com/soccer/team/hoffenheim/hQAtP9Sl/results/",
-			16: "https://www.betexplorer.com/soccer/team/bayern-munich/nVp0wiqd/results/",
-			17: "https://www.betexplorer.com/soccer/team/freiburg/fiEQZ7C7/results/",
-			18: "https://www.betexplorer.com/soccer/team/wolfsburg/nwkTahLL/results/",
-		}
-		page = requests.get(dict_teams[number])
-		soup = BeautifulSoup(page.content, 'html.parser')
-		wls = soup.findAll("td",class_='table-main__formicon')
-		wls2 = soup.findAll("td")
-		for x in list(wls2):
-			if str(curr_matchday)+". Round" == x.text.strip():
-				t = list(wls2)[:list(wls2).index(x)]
-				counter=1
-				for i in t:
-					if i.text.strip() == "details": counter +=1
-				w=[]
-				for i in list(wls)[counter:counter+5]:
-					if "icon icon__w" in str(i):
-						w.append(1) 
-					elif "icon icon__d" in str(i):
-						w.append(0.5)
-					else:
-						w.append(0)
-				return w
-
-	final_n,final_p,final_m,final_w,final_f=[],[],[],[],[]
-
-	for i in range(1, max_matchday):
-
-		# SCRAPING
-		URL = 'https://www.dfb.de/bundesliga/spieltagtabelle/?spieledb_path=/competitions/12/season0s/current/matchday/1&spieledb_path=%2Fcompetitions%2F12%2Fseasons%2Fcurrent%2Fmatchday%2F' + str(curr_matchday) #change string end to 2 for second
-		URLb = 'https://www.dfb.de/bundesliga/spieltagtabelle/?spieledb_path=/competitions/12/season0s/current/matchday/1&spieledb_path=%2Fcompetitions%2F12%2Fseasons%2Fcurrent%2Fmatchday%2F' + str(curr_matchday-1) if curr_matchday != 0 else 'https://www.dfb.de/bundesliga/spieltagtabelle/?spieledb_path=/competitions/12/season0s/current/matchday/1&spieledb_path=%2Fcompetitions%2F12%2Fseasons%2Fcurrent%2Fmatchday%2F' + str(curr_matchday)
-		curr_matchday += 1
-		page = requests.get(URL)
-		page2 = requests.get(URLb)
-		soup = BeautifulSoup(page.content, 'html.parser')
-		soup2 = BeautifulSoup(page2.content, 'html.parser')
-
-		# PROCESSING
-		w,m,n,t,p,f=[],[],[],[],[],[]
-		teams_names = soup.find_all("td", class_="column-team-emblem")
-		teams_table = soup2.find_all("span", class_="hidden-xs")
-		for i in teams_names:
-			img = i.find('img', alt=True)
-			n.append(img['alt'][12:])
-		matches_results = soup.find_all("td", class_="column-score")
-
-		for i in matches_results: m.append(i.text.strip())
-		for i in teams_table: t.append(i.text.strip())
-		t=t[2:20]
-		for i in t: t[t.index(i)] = dict_avg_worth_2020[i][0] #change names to numbers
-
-		for i in n: w.append(dict_avg_worth_2020[i][1])
-		for i in n: n[n.index(i)] = dict_avg_worth_2020[i][0] #change names to numbers
-		for i in m: #change scores to win for team 1 1/0
-			if int(i[0])>int(i[-1]):
-				m[m.index(i)] = 1 
-			elif int(i[0])==int(i[-1]):
-				m[m.index(i)] = 0.5 
-			else:
-				m[m.index(i)] = 0
-
-		for i in n: p.append(t.index(i)+1)
-
-		n_new=[]
-		for c,i in enumerate(n, 0):
-			if c % 2 == 0: n_new.append([n[n.index(i)], n[n.index(i)+1]])
-		n=n_new
-
-		p_new=[]
-		for c,i in enumerate(p, 0):
-			if c % 2 == 0: p_new.append([p[p.index(i)], p[p.index(i)+1]])
-		p=p_new
-
-		w_new=[]
-		for c,i in enumerate(w, 0):
-			if c % 2 == 0: w_new.append([w[w.index(i)], w[w.index(i)+1]])
-		w=w_new
-
-		for i in n:
-			a,b=0,0
-			for x in form(i[0]): a+=x
-			for y in form(i[1]): b+=y
-			f.append([a, b])
-
-		#print(f"Teams: \n{n} \nScore: \n{m} \nPlace in Table: \n{p} \nWorth: \n{w} \nForm: \n{f}")
-		final_n.extend(n)
-		final_m.extend(m)
-		final_p.extend(p)
-		final_w.extend(w)
-		final_f.extend(f)
-
-	final=[]
-	for c,i in enumerate(final_n, 0):
-		final.append([i[0], i[1], final_m[c], final_w[c][0], final_w[c][1], final_p[c][0], final_p[c][1], final_f[c][0], final_f[c][1]])
-	df = pd.DataFrame(final, columns = ["home_team", "away_team", "home_team_win","ht_worth","at_worth","ht_table","at_table","ht_fs","aw_fs"])
-	df.to_csv('out_data.csv')
-	return df
-
+#home_team, away_team, home_team_win, ht_worth, at_worth, ht_table, at_table, ht_fs, aw_fs, curr_matchday
 def season(num):
-	max_matchday=34
+	max_matchday=35
 	curr_matchday=1 #changes in loop
+	final_n,final_p,final_m,final_w,final_f,final_md=[],[],[],[],[],[]
 
 	headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36'}
 	worths = requests.get(f'https://www.transfermarkt.de/bundesliga/startseite/wettbewerb/L1/plus/saison_id?saison_id={str(num)}', headers=headers)
@@ -179,7 +37,7 @@ def season(num):
 	"SC Freiburg": [17],
 	"VfL Wolfsburg": [18],
 	"Fortuna Düsseldorf": [19],
-	"SC Paderborn": [20],
+	"SC Paderborn 07": [20],
 	"Hannover 96": [21],
 	"1.FC Nürnberg": [22]
 	}
@@ -205,6 +63,10 @@ def season(num):
 			name_result = "FC Bayern München"
 		elif name == "RB Leipzig":
 			name_result = "RasenBallsport Leipzig"
+		elif name == "SC Paderborn":
+			name_result = "SC Paderborn 07"
+		elif name == "Union Berlin":
+			name_result = "1.FC Union Berlin"
 		else:
 			name_result = name
 		return name_result
@@ -215,10 +77,46 @@ def season(num):
 		if 'Mio.' in b:
 			b=float((b[:-7]).replace(',','.'))
 		elif 'Tsd.' in b:
-			b=float((b[:-7]/1000).replace(',','.'))
+			b=float(str((float(b[:-7])/1000)).replace(',','.'))
 		else:
 			pass
 		teams[i.text.strip()].append(b)
+
+	forms=[]
+	def init_forms():
+		for i in range(1,23):
+			forms.append(form(i))
+
+	def spec_form(all):
+		re = 0
+		for i in all:
+			if str(curr_matchday-1)==i[2]:
+				if all.index(i)>=4:
+					sub=all[all.index(i)-4:all.index(i)]
+				elif all.index(i)==3:
+					sub=all[all.index(i)-3:all.index(i)]
+				elif all.index(i)==2:
+					sub=all[all.index(i)-2:all.index(i)]
+				elif all.index(i)==1:
+					sub=all[all.index(i)-1:all.index(i)]
+				elif all.index(i)==0:
+					sub=all[all.index(i)]
+				else:
+					pass
+
+				for x in sub:
+					s=x[-1]
+					if 'n.V.' in s: s=s[:-4]
+					if 'n.E.' in s: s=s[:-4]
+					ls=int(s[:s.index(":")])
+					rs=int(s[s.index(":")+1:])
+					if x[4] == 'H':
+						re+=0.2 if ls > rs else 0
+					elif x[4] == 'A':
+						re+=0.2 if rs > ls else 0
+					else:
+						pass
+		return re
 
 	def form(number):
 		dict_teams={
@@ -249,8 +147,9 @@ def season(num):
 		headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36'}
 		page = requests.get(dict_teams[number], headers=headers)
 		soup = BeautifulSoup(page.content, 'html.parser')
-		
-		re = 0
+
+		print(str(round((number/22)*100, 4))+" %")
+
 		all=[]
 		top = soup.find("div", {"class": "responsive-table"})
 		table_body=top.find('tbody')
@@ -260,36 +159,11 @@ def season(num):
 			cols=[x.text.strip() for x in cols]
 			if cols[1]=='':
 				all.append(cols)
-		
-		for i in all:
-			if str(curr_matchday)==i[2]:
-				if all.index(i)>=4:
-					sub=all[all.index(i)-4:all.index(i)]
-				elif all.index(i)==3:
-					sub=all[all.index(i)-3:all.index(i)]
-				elif all.index(i)==2:
-					sub=all[all.index(i)-2:all.index(i)]
-				elif all.index(i)==1:
-					sub=all[all.index(i)-1:all.index(i)]
-				elif all.index(i)==0:
-					sub=all[all.index(i)]
-				else:
-					pass
 
-				for x in sub:
-					s=x[-1]
-					if 'n.V.' in s: s=s[:-4]
-					if 'n.E.' in s: s=s[:-4]
-					ls=int(s[:s.index(":")])
-					rs=int(s[s.index(":")+1:])
-					if x[4] == 'H':
-						re+=0.2 if ls > rs else 0
-					elif x[4] == 'A':
-						re+=0.2 if rs > ls else 0
-					else:
-						pass
+		return all
 
-		return re
+	print("Initializing teams games for this season:")
+	init_forms() #get each teams plays from that season
 
 	for i in range(1, max_matchday):
 
@@ -299,7 +173,6 @@ def season(num):
 		soup = BeautifulSoup(page.content, 'html.parser')
 		curr_matchday += 1
 
-		final_n,final_p,final_m,final_w,final_f=[],[],[],[],[]
 		w,m,n,t,p,f=[],[],[],[],[],[]
 
 		# PROCESSING
@@ -321,7 +194,6 @@ def season(num):
 			strt = i.text[:40].replace("	","").replace("\n","")
 			right.append([strt[:-5].strip(), re.sub('\D', '', strt[-4:-1])])
 		
-		print([left, right])
 		nt=[] # temporal list with names
 		for i in range(0, len(left)):
 			nt.append([replace_names(left[i][0]), replace_names(right[i][0])])
@@ -340,24 +212,30 @@ def season(num):
 		
 		for i in n:
 			a,b=0,0
-			a+=form(i[0])
-			b+=form(i[1])
+			a+=spec_form(forms[i[0]-1])
+			b+=spec_form(forms[i[1]-1])
 			f.append([a, b])
 
-		print(f"----- MATCHDAY {curr_matchday-1} DONE -----: ")# \n\nTeams: \n{n} \nScore: \n{m} \nPlace in Table: \n{p} \nWorth: \n{w} \nForm: \n{f} \nMatchday: \n{curr_matchday-1}")
+		print(f"----- MATCHDAY {curr_matchday-1} DONE ----- ")# \n\nTeams: \n{n} \nScore: \n{m} \nPlace in Table: \n{p} \nWorth: \n{w} \nForm: \n{f} \nMatchday: \n{curr_matchday-1}")
 		final_n.extend(n)
 		final_m.extend(m)
 		final_p.extend(p)
 		final_w.extend(w)
 		final_f.extend(f)
+		for i in range(1,10):
+			final_md.append(curr_matchday-1)
 
 	final=[]
 	for c,i in enumerate(final_n, 0):
-		final.append([i[0], i[1], final_m[c], final_w[c][0], final_w[c][1], final_p[c][0], final_p[c][1], final_f[c][0], final_f[c][1], curr_matchday-1])
+		final.append([i[0], i[1], final_m[c], final_w[c][0], final_w[c][1], final_p[c][0], final_p[c][1], final_f[c][0], final_f[c][1], final_md[c]])
 	df = pd.DataFrame(final, columns = ["home_team", "away_team", "home_team_win","ht_worth","at_worth","ht_table","at_table","ht_fs","aw_fs","curr_matchday"])
-	df.to_csv('out_data.csv')
+	df.to_csv('out_data_2019.csv')
 	return df
 
+#home_team, away_team, home_team_win [2,1,0], ht_full_worth, at_full_worth, ht_table, at_table, ht_fs, aw_fs, curr_matchday, 1stteamplayers_disabled, weather
+
+del list[1]
+list.remove()
+
 if __name__ == '__main__':
-	#print(s2021())
-	season(2018)
+	season(2019)

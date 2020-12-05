@@ -21,10 +21,19 @@ def main():
     print(colored('[2]', 'green'),'Deep model analysis;  -model_filepath -dataset_filepath -feature_to_predict -list_of_features -nth element -nth_row_element')
     print(colored('[3]', 'green'),'Import analysis data; -dataset_filepath')
     print(colored('[4]', 'green'),'exit script')
+    print(colored('[help]', 'green'),'show this again')
 
     while True:
 
         i = input('> ')
+        if str(i)=='help':
+            print(colored('[0]', 'green'),'Make Model;           -dataset_filepath -feature_to_predict -list_of_features -epochs -optimizer [adam] -loss_func [binary_crossentropy] -dropout [t/f] -save_model [t/f]')
+            print(colored('[1]', 'green'),'Predict model;        -model_filepath -dataset_filepath -feature_to_predict -list_of_features -row_to_predict -nth_element')
+            print(colored('[2]', 'green'),'Deep model analysis;  -model_filepath -dataset_filepath -feature_to_predict -list_of_features -nth element -nth_row_element')
+            print(colored('[3]', 'green'),'Import analysis data; -dataset_filepath')
+            print(colored('[4]', 'green'),'exit script')
+            print(colored('[help]', 'green'),'show this again')
+            continue
         i = i.split()
 
         if str(i[0])=='0':
@@ -39,8 +48,24 @@ def main():
         elif str(i[0])=='1':
 
             results = predict_csv_features(i[1],i[2],i[3],i[4].split(','),int(i[5]),int(i[6]),False,0)
-
+            '''print(results)
+            t=results[1:]
+            t.sort(key=lambda x: x[1])
+            t.reverse()
+            if t[0][1] == t[-1][1]:
+                print(colored(t[0][0], 'red'),f' [{round(t[0][1], 3)}]')
+            for c in t:
+                if t[0][1] == c[1]:
+                    print(colored(c[0], 'red'),f' [{round(c[1], 3)}]')
+                elif t[0][1] / c[1] < 1: 
+                    print(colored(c[0], 'yellow'),f' [{round(c[1], 3)}]')
+                elif t[0][1] / c[1] > 1:
+                    print(colored(c[0], 'green'),f' [{round(c[1], 3)}]')
+                else:
+                    pass
+            print(t)'''
             for c,i in enumerate(results):
+            
                 if c==0:
                     print(f'Prediction: {round(float(i[0]), 3)} |',colored(f'{i[1]}', attrs=['bold']))
                     continue

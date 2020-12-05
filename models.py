@@ -9,7 +9,6 @@ from collections import Counter
 # tensorflow
 import tensorflow as tf
 import tensorflow_hub as hub
-import tensorflow_datasets as tfds
 from tensorflow import feature_column
 import tensorflow.keras as keras
 from tensorflow.keras import *
@@ -19,6 +18,8 @@ from sklearn.model_selection import train_test_split
 ##########################################
 # COLLECTION OF NEURAL NETWORK FUNCTIONS #
 ##########################################
+
+#! DONT LEAVE COLUMN TITLES EMPTY IN THE DATASET OR ELSE IT WILL RETURN MENTAL ERRORS
 
 # NUMERICAL/TEXT FEATURES TRAINING (BINARY CLASSIFICATION)
 def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features, epochs_amount, optimizer_input, loss_input, dropout, save_model):
@@ -93,6 +94,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features, epo
 
     model = tf.keras.Sequential()
     bias=True
+    tf.TensorSpec(None, name='flayer')
     
     if len(dataframe.index)<1000:
         model.add(feature_layer)
@@ -114,7 +116,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features, epo
         model.add(layers.Dense(1, activation='sigmoid'))
         dense_layers=3
 
-    cb_list=[EarlyStopping(monitor='accuracy', min_delta=0.005, patience=10, baseline=None, mode='auto')] if dropout==True else []
+    cb_list=[EarlyStopping(monitor='val_accuracy', min_delta=0.005, patience=10, baseline=None, mode='auto')] if dropout==True else []
     # optimize the model
     model.compile(optimizer=optimizer_input,
                   loss=loss_input,
@@ -145,7 +147,7 @@ def neural_net_csv_features(url_to_csv, column_to_predict, list_of_features, epo
         accuracy = '\nTraining acc.: {:.2f} Test acc.: {:.2f}'.format(avg_acc, avg_val_acc)
 
     if save_model==True:
-        model.save(os.getcwd() + 'ml_model_'+str(date.today()), '/') # save model for prediction use later
+        model.save('model_'+str(date.today()), '/') # save model for prediction use later
         model_info = 'Model saved in folder: {}\n'.format(str(date.today()))
     else:
         model_info = ''
